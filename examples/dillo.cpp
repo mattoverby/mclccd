@@ -65,7 +65,7 @@ int main(int, char**)
     tbb::concurrent_unordered_set<int> discrete;
     tree.append_pair = [&](const Eigen::Vector4i &sten, int type, const double &toi)->void
     {
-        mcl::CollisionPair<double,3> c;
+        mcl::CollisionPair<double> c;
         c.toi = toi;
         c.type = type;
         c.stencil = sten;

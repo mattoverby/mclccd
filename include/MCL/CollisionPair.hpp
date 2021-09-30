@@ -6,6 +6,7 @@
 
 #include <Eigen/Core>
 #include <type_traits> // is_same
+#include <vector>
 
 namespace mcl
 {
@@ -20,7 +21,7 @@ enum
     COLLISIONPAIR_NUM
 };
 
-template<typename T, int DIM>
+template<typename T>
 class CollisionPair
 {
 public:
@@ -42,20 +43,20 @@ public:
     // Compute signed barycoords for the pair at time t: vf=[1,-f0,-f1,-f2], ee=[p0,p1,-q0,-q1]
     // Does not deduce argument, e.g. if X0, X1 are MatrixXd:
     // Vector4d = pair.barys<MatrixXd>(X0, X1, 1);
-    template <typename DerivedV>
-    Eigen::Matrix<T,DIM+1,1> compute_barys(Eigen::Ref<const DerivedV> X0, Eigen::Ref<const DerivedV> X1, T t, bool clamp_barys=true) const
+    template<typename DerivedV>
+    std::vector<T> compute_barys(Eigen::Ref<const DerivedV> X0, Eigen::Ref<const DerivedV> X1, T t, bool clamp_barys=true) const
     {
         // Return zero if something wrong with input
         if (!bool(std::is_same<T,typename DerivedV::Scalar>::value) || !(X0.IsRowMajor == X1.IsRowMajor) ||
-            (X0.rows()!=X1.rows()) || (X0.cols()!=DIM) || (X1.cols()!=DIM) )
-            { return Eigen::Matrix<T,DIM+1,1>::Zero(); }
-        return barys(X0.data(), X1.data(), X0.rows(), X0.IsRowMajor, t, clamp_barys);
+            (X0.rows()!=X1.rows()) || (X0.cols()!=X1.cols()) )
+            { return std::vector<T>(); }
+        return compute_barys(X0.data(), X1.data(), X0.rows(), X0.cols(), X0.IsRowMajor, t, clamp_barys);
     }
 
 protected:
 
     // Kernel functions for barycoords
-    Eigen::Matrix<T,DIM+1,1> compute_barys(const T *X0, const T *X1, int nx, bool rowmajor, T t, bool clamp_barys) const;
+    std::vector<T> compute_barys(const T *X0, const T *X1, int nx, int dim, bool rowmajor, T t, bool clamp_barys) const;
 
 };
 
@@ -63,8 +64,8 @@ protected:
 
 // Hash function for using unordered_map/set
 namespace std {
-    template<typename T, int DIM> struct hash<mcl::CollisionPair<T,DIM>> {
-        std::size_t operator()(const mcl::CollisionPair<T,DIM>& c) const { return c.hash(); }
+    template<typename T> struct hash<mcl::CollisionPair<T>> {
+        std::size_t operator()(const mcl::CollisionPair<T>& c) const { return c.hash(); }
     };
 }
 
