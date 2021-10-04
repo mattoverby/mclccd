@@ -346,6 +346,10 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
         pair.first[0] = f0[i];
         for (int j=0; j<DIM; ++j)
             pair.first[j+1] = f1[j];
+
+        if (filter_pair != nullptr)
+            if (filter_pair(pair.first, pair.second))
+                pairs.pop_back();
     }
 
     // VF, f1 -> f0
@@ -365,6 +369,10 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
         pair.first[0] = f1[i];
         for (int j=0; j<DIM; ++j)
             pair.first[j+1] = f0[j];
+
+        if (filter_pair != nullptr)
+            if (filter_pair(pair.first, pair.second))
+                pairs.pop_back();
     }
 
     if (DIM != 3)
@@ -386,6 +394,10 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
             PairType &pair = pairs.back();
             pair.second = COLLISIONPAIR_EE;
             pair.first = Eigen::Vector4i(f0[sten[0]], f0[sten[1]], f1[sten[2]], f1[sten[3]]);
+
+            if (filter_pair != nullptr)
+                if (filter_pair(pair.first, pair.second))
+                    pairs.pop_back();
         }
     }
 }
@@ -432,12 +444,11 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
         }
     }
 
-    bool test_wrong_side = false;
     T toi = -1;
     int hit = 0;
     if (type == COLLISIONPAIR_VF)
     {
-        hit = NarrowPhase<T,DIM>::query_ccd_vf(verts0, verts1, options.ccd_eta, test_wrong_side, toi);
+        hit = NarrowPhase<T,DIM>::query_ccd_vf(verts0, verts1, options.ccd_eta, options.vf_one_sided, toi);
     }
     else if (type == COLLISIONPAIR_EE)
     {

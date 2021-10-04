@@ -46,13 +46,15 @@ public:
         bool threaded; // cpu-threaded traverse(...)
         bool discrete; // discrete check ff/ee at t=1
         bool continuous; // ccd check from t=0 to t=1
+        bool vf_one_sided; // allow pass-through if norm dir
         Options() :
             box_eta(1e-6),
             ccd_eta(1e-6),
             reptri(true),
             threaded(true),
             discrete(true),
-            continuous(true)
+            continuous(true),
+            vf_one_sided(false)
             {}
     } options;
 
@@ -91,6 +93,9 @@ public:
     // This function is called from a thread during CCD if two primitives collide
     // (and options.continuous==true).
     std::function<void(const Eigen::Vector4i &sten, int type, const T& toi)> append_pair;
+
+    // Return true if the candidate pair should be skipped before narrow phase.
+    std::function<bool(const Eigen::Vector4i &sten, int type)> filter_pair;
 
     // This function is called from a thread if there is a discrete isect
     // (and options.discrete==true). Returns true to exit traveral immediately.
