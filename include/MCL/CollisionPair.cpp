@@ -3,8 +3,6 @@
 
 #include "CollisionPair.hpp"
 #include "ccd_internal/Assert.hpp"
-#include "ccd_internal/Distance.hpp"
-
 #include <sstream>
 #include <functional> // hash
 
