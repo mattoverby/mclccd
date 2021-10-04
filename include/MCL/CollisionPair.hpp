@@ -17,7 +17,6 @@ enum
     COLLISIONPAIR_INVALID,
     COLLISIONPAIR_VF,
     COLLISIONPAIR_EE,
-    COLLISIONPAIR_AIR, // air-element
     COLLISIONPAIR_NUM
 };
 
@@ -39,25 +38,6 @@ public:
 
     virtual std::string hash_str() const; // readable stencil
     virtual std::size_t hash() const;
-
-    // Compute signed barycoords for the pair at time t: vf=[1,-f0,-f1,-f2], ee=[p0,p1,-q0,-q1]
-    // Does not deduce argument, e.g. if X0, X1 are MatrixXd:
-    // Vector4d = pair.barys<MatrixXd>(X0, X1, 1);
-    template<typename DerivedV>
-    std::vector<T> compute_barys(Eigen::Ref<const DerivedV> X0, Eigen::Ref<const DerivedV> X1, T t, bool clamp_barys=true) const
-    {
-        // Return zero if something wrong with input
-        if (!bool(std::is_same<T,typename DerivedV::Scalar>::value) || !(X0.IsRowMajor == X1.IsRowMajor) ||
-            (X0.rows()!=X1.rows()) || (X0.cols()!=X1.cols()) )
-            { return std::vector<T>(); }
-        return compute_barys(X0.data(), X1.data(), X0.rows(), X0.cols(), X0.IsRowMajor, t, clamp_barys);
-    }
-
-protected:
-
-    // Kernel functions for barycoords
-    std::vector<T> compute_barys(const T *X0, const T *X1, int nx, int dim, bool rowmajor, T t, bool clamp_barys) const;
-
 };
 
 } // ns mcl
