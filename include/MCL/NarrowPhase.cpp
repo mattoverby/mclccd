@@ -179,64 +179,12 @@ bool NarrowPhase<double,3>::query_ray_box(
 	return true;
 }
 
-// From Real-time Collision Detection, p179
-// https://github.com/erincatto/box2d/blob/master/src/collision/b2_collision.cpp#L137
-// License: MIT
 template <>
 bool NarrowPhase<double,2>::query_ray_box(
 	const Eigen::Vector2d &p_x0, const Eigen::Vector2d &p_x1,
 	const Eigen::Vector2d &bmin, const Eigen::Vector2d &bmax )
 {
-	// TODO this function seems to have bugs
-	return true;
-	
-	
-    using namespace Eigen;
-	double tmin = -std::numeric_limits<double>::max();
-	double tmax = std::numeric_limits<double>::max();
-    double eps = std::numeric_limits<double>::epsilon();
-	Vector2d p = p_x0;
-	Vector2d d = p_x1-p_x0;
-	Vector2d absD(std::abs(d[0]), std::abs(d[1]));
-    Vector2d normal = Vector2d::Zero();
-
-    for (int i = 0; i < 2; ++i)
-    {
-        if (absD[i] < eps)
-        {
-            if ((p(i) < bmin[i] || bmax[i] < p[i]))
-            { // Parallel
-                return false;
-            }
-        }
-        else
-        {
-            double inv_d = 1.0 / d[i];
-            double t1 = (bmin[i] - p[i]) * inv_d;
-            double t2 = (bmax[i] - p[i]) * inv_d;
-            double s = -1.0; // sign of normal vector
-            if (t1 > t2)
-            {
-                std::swap(t1, t2);
-                s = 1.0;
-            }
-            if (t1 > tmin)
-            {
-                normal.setZero();
-                normal[i] = s;
-                tmin = t1;
-            }
-            tmax = std::min(tmax, t2);
-            if (tmin > tmax)
-            {
-                return false;
-            }
-        }
-    }
-
-	if (tmin < 0.0 || tmin > 1.0)
-		return false;
-
+	// TODO: this function
 	return true;
 }
 
@@ -283,7 +231,7 @@ int NarrowPhase<double,2>::query_ccd_vf(
 		q_AABB.max()[i] += eta;
 	}
 
-	if (!query_ray_box(verts0[0], verts1[1], q_AABB.min(), q_AABB.max()))
+	if (!query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
         return 0;
 
 	std::vector<double> all_toi;
