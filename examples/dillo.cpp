@@ -2,11 +2,11 @@
 // Distributed under the MIT License.
 
 #include "MCL/BVHTree.hpp"
-#include "MCL/CollisionPair.hpp"
 #include "MCL/NarrowPhase.hpp"
 #include "MCL/ccd_internal/Timer.hpp"
 
 #include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_vector.h>
 #include <atomic>
 #include <iostream>
 
@@ -61,15 +61,12 @@ int main(int, char**)
     // Traverse BVH for intersections
     std::cout << "Performing CCD: " << std::flush; 
     timer.start();
-    tbb::concurrent_unordered_set<std::size_t> pairs;
+    tbb::concurrent_vector<std::pair<Eigen::Vector4i,int>> pairs;
     tbb::concurrent_unordered_set<int> discrete;
     tree.append_pair = [&](const Eigen::Vector4i &sten, int type, const double &toi)->void
     {
-        mcl::CollisionPair<double> c;
-        c.toi = toi;
-        c.type = type;
-        c.stencil = sten;
-        pairs.emplace(c.hash());
+        (void)(toi);
+        pairs.emplace_back(sten, type);
     };
     tree.append_discrete = [&](int p0, int p1)->bool
     {

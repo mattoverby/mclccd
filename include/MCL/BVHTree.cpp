@@ -2,7 +2,6 @@
 // Distributed under the MIT License.
 
 #include "BVHTree.hpp"
-#include "CollisionPair.hpp" // for type
 #include "NarrowPhase.hpp"
 #include "ccd_internal/Assert.hpp"
 #include "ccd_internal/KdBVH.hpp"

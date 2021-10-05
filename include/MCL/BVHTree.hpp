@@ -14,6 +14,15 @@ namespace Eigen // Forward declare BVH type, then include in cpp
 namespace mcl
 {
 
+// CollisionPair type
+enum
+{
+    COLLISIONPAIR_INVALID,
+    COLLISIONPAIR_VF,
+    COLLISIONPAIR_EE,
+    COLLISIONPAIR_NUM
+};
+
 // Traversal struct for things like point-in-elem queries
 template <typename T, int DIM>
 class BVHTraverse
