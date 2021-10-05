@@ -279,7 +279,7 @@ int NarrowPhase<double,2>::query_ccd_vf(
 		q_AABB.max()[i] += eta;
 	}
 
-	if (!query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
+	if (!query_ray_box(verts0[0], verts1[1], q_AABB.min(), q_AABB.max()))
         return 0;
 
 	std::vector<double> all_toi;
