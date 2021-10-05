@@ -187,6 +187,10 @@ bool NarrowPhase<double,2>::query_ray_box(
 	const Eigen::Vector2d &p_x0, const Eigen::Vector2d &p_x1,
 	const Eigen::Vector2d &bmin, const Eigen::Vector2d &bmax )
 {
+	// TODO this function seems to have bugs
+	return true;
+	
+	
     using namespace Eigen;
 	double tmin = -std::numeric_limits<double>::max();
 	double tmax = std::numeric_limits<double>::max();
