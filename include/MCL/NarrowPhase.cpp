@@ -185,6 +185,7 @@ bool NarrowPhase<double,2>::query_ray_box(
 	const Eigen::Vector2d &bmin, const Eigen::Vector2d &bmax )
 {
 	// TODO: this function
+	(void)(p_x0); (void)(p_x1); (void)(bmin); (void)(bmax);
 	return true;
 }
 
