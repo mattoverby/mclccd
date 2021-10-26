@@ -50,20 +50,24 @@ public:
     struct Options
     {
         T box_eta; // padding of tree boxes
-        T ccd_eta; // gap for narrowphase <= box_eta
+        T vf_ccd_eta; // gap for vf narrowphase <= box_eta
+        T ee_ccd_eta; // gap for ee narrowphase <= box_eta
         bool reptri; // representative triangles
         bool threaded; // cpu-threaded traverse(...)
         bool discrete; // discrete check ff/ee at t=1
         bool continuous; // ccd check from t=0 to t=1
         bool vf_one_sided; // allow pass-through if norm dir
+        bool ee_robust; // check VV and VE
         Options() :
             box_eta(1e-6),
-            ccd_eta(1e-6),
+            vf_ccd_eta(1e-6),
+            ee_ccd_eta(1e-6),
             reptri(true),
             threaded(true),
             discrete(true),
             continuous(true),
-            vf_one_sided(false)
+            vf_one_sided(false),
+            ee_robust(true)
             {}
     } options;
 

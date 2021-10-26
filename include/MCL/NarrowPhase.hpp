@@ -42,6 +42,7 @@ public:
     static int query_ccd_ee(
         const VecType *v0, const VecType *v1,
         const T &eta, // gap
+        bool test_vv_and_ve,
         T &t_impact);
 
     // Discrete tests for face-face and edge-edge

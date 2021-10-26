@@ -141,41 +141,19 @@ bool NarrowPhase<double,3>::query_ray_box(
 	// "An Efficient and Robust Ray–Box Intersection Algorithm"
 	double tymin, tymax, tzmin, tzmax;
 	std::vector<RowVector3S> bounds = {bmin, bmax};
-	double tmin = ( bounds[sign[0]](0)   - origin(0)) * inv_dir(0);
+	double tmin = ( bounds[sign[0]](0) - origin(0)) * inv_dir(0);
 	double tmax = ( bounds[1-sign[0]](0) - origin(0)) * inv_dir(0);
 	tymin = (bounds[sign[1]](1)   - origin(1)) * inv_dir(1);
 	tymax = (bounds[1-sign[1]](1) - origin(1)) * inv_dir(1);
-	if ( (tmin > tymax) || (tymin > tmax) )
-	{
-		return false;
-	}
-	if (tymin > tmin)
-	{
-		tmin = tymin;
-	}
-	if (tymax < tmax)
-	{
-		tmax = tymax;
-	}
-	tzmin = (bounds[sign[2]](2) - origin(2))   * inv_dir(2);
+	if ((tmin > tymax) || (tymin > tmax)) { return false; }
+	if (tymin > tmin) { tmin = tymin; }
+	if (tymax < tmax) { tmax = tymax; }
+	tzmin = (bounds[sign[2]](2) - origin(2)) * inv_dir(2);
 	tzmax = (bounds[1-sign[2]](2) - origin(2)) * inv_dir(2);
-	if ( (tmin > tzmax) || (tzmin > tmax) )
-	{
-		return false;
-	}
-	if (tzmin > tmin)
-	{
-		tmin = tzmin;
-	}
-	if (tzmax < tmax)
-	{
-		tmax = tzmax;
-	}
-	if(!( (tmin < t1) && (tmax > t0) ))
-	{
-		return false;
-	}
-
+	if ((tmin > tzmax) || (tzmin > tmax)) { return false; }
+	if (tzmin > tmin) { tmin = tzmin; }
+	if (tzmax < tmax) { tmax = tzmax; }
+	if(!((tmin < t1) && (tmax > t0))) { return false; }
 	return true;
 }
 
@@ -404,6 +382,7 @@ int NarrowPhase<double,3>::query_ccd_ee(
     const Eigen::Vector3d *verts0,
     const Eigen::Vector3d *verts1,
     const double &eta,
+    bool test_vv_and_ve,
     double &t_impact)
 {
     using namespace Eigen;
@@ -433,29 +412,32 @@ int NarrowPhase<double,3>::query_ccd_ee(
             verts1[0], verts1[1], verts1[2], verts1[3],
             eta, t_impact, &all_toi)) { return true; }
 
-        if (CTCD::vertexEdgeCTCD(verts0[0], verts0[2], verts0[3], verts1[0], verts1[2], verts1[3], eta, t_impact, &all_toi))
-            return true;
+        if (test_vv_and_ve)
+        {
+            if (CTCD::vertexEdgeCTCD(verts0[0], verts0[2], verts0[3], verts1[0], verts1[2], verts1[3], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexEdgeCTCD(verts0[1], verts0[2], verts0[3], verts1[1], verts1[2], verts1[3], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexEdgeCTCD(verts0[1], verts0[2], verts0[3], verts1[1], verts1[2], verts1[3], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexEdgeCTCD(verts0[2], verts0[0], verts0[1], verts1[2], verts1[0], verts1[1], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexEdgeCTCD(verts0[2], verts0[0], verts0[1], verts1[2], verts1[0], verts1[1], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexEdgeCTCD(verts0[3], verts0[0], verts0[1], verts1[3], verts1[0], verts1[1], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexEdgeCTCD(verts0[3], verts0[0], verts0[1], verts1[3], verts1[0], verts1[1], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexVertexCTCD(verts0[0], verts0[2], verts1[0], verts1[2], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexVertexCTCD(verts0[0], verts0[2], verts1[0], verts1[2], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexVertexCTCD(verts0[0], verts0[3], verts1[0], verts1[3], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexVertexCTCD(verts0[0], verts0[3], verts1[0], verts1[3], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexVertexCTCD(verts0[1], verts0[2], verts1[1], verts1[2], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexVertexCTCD(verts0[1], verts0[2], verts1[1], verts1[2], eta, t_impact, &all_toi))
+                return true;
 
-        if (CTCD::vertexVertexCTCD(verts0[1], verts0[3], verts1[1], verts1[3], eta, t_impact, &all_toi))
-            return true;
+            if (CTCD::vertexVertexCTCD(verts0[1], verts0[3], verts1[1], verts1[3], eta, t_impact, &all_toi))
+                return true;
+        }
 
         return false;
     };
@@ -502,13 +484,14 @@ int NarrowPhase<double,3>::query_ccd_ee(
 template<>
 int NarrowPhase<double,2>::query_ccd_ee(
     const Eigen::Vector2d*, const Eigen::Vector2d*,
-    const double&, double&) { return 0; }
+    const double&, bool, double&) { return 0; }
 
 template<>
 int NarrowPhase<float,3>::query_ccd_ee(
     const Eigen::Vector3f *verts0_,
     const Eigen::Vector3f *verts1_,
     const float &eta,
+    bool test_vv_and_ve,
     float &t_impact)
 {
     Eigen::Vector3d verts0[4], verts1[4];
@@ -518,7 +501,7 @@ int NarrowPhase<float,3>::query_ccd_ee(
         verts1[i] = verts1_[i].cast<double>();
     }
     double t = t_impact;
-    int ret = NarrowPhase<double,3>::query_ccd_ee(verts0, verts1, eta, t);
+    int ret = NarrowPhase<double,3>::query_ccd_ee(verts0, verts1, eta, test_vv_and_ve, t);
     t_impact = t;
     return ret;
 }
@@ -526,7 +509,7 @@ int NarrowPhase<float,3>::query_ccd_ee(
 template<>
 int NarrowPhase<float,2>::query_ccd_ee(
     const Eigen::Vector2f*, const Eigen::Vector2f*,
-    const float&, float&) { return 0; }
+    const float&, bool, float&) { return 0; }
 
 // ---------------------------------------------------------
 //	Discrete tests

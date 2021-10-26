@@ -30,9 +30,10 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
     }
 
     mclAssert(options.box_eta >= 0);
-    mclAssert(options.ccd_eta >= 0);
-    if (options.ccd_eta < options.box_eta)
-        options.ccd_eta = options.box_eta;
+    mclAssert(options.vf_ccd_eta >= 0);
+    mclAssert(options.ee_ccd_eta >= 0);
+    options.vf_ccd_eta = std::min(options.vf_ccd_eta, options.box_eta);
+    options.ee_ccd_eta = std::min(options.ee_ccd_eta, options.box_eta);
 
     bool update_reptri = false;
 
@@ -447,11 +448,11 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
     int hit = 0;
     if (type == COLLISIONPAIR_VF)
     {
-        hit = NarrowPhase<T,DIM>::query_ccd_vf(verts0, verts1, options.ccd_eta, options.vf_one_sided, toi);
+        hit = NarrowPhase<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, options.vf_one_sided, toi);
     }
     else if (type == COLLISIONPAIR_EE)
     {
-        hit = NarrowPhase<T,DIM>::query_ccd_ee(verts0, verts1, options.ccd_eta, toi);
+        hit = NarrowPhase<T,DIM>::query_ccd_ee(verts0, verts1, options.ee_ccd_eta, options.ee_robust, toi);
     }
 
     if (hit == 1)
