@@ -448,6 +448,7 @@ int NarrowPhase<double,3>::query_ccd_ee(
     if (hit)
     {
         mclAssert((int)all_toi.size() > 0);
+		std::sort(all_toi.begin(), all_toi.end());
 
         // Loop t. Find first t that is not parallel
         bool actually_hit = false;
