@@ -39,9 +39,12 @@ bool NarrowPhase<double,2>::hit_wrong_side_vf(
     Vector2d p = q0start*(1.0-t) + q0end*t;
     Vector2d e0 = q1start*(1.0-t) + q1end*t;
     Vector2d e1 = q2start*(1.0-t) + q2end*t;
-    Vector2d n = Vector2d( e1[1]-e0[1], -(e1[0]-e0[0]) ).normalized();
-    Vector2d barys = Vector2d((e1-p).norm(), (e0-p).norm()) / (e0-e1).norm();
+    Vector2d n = Vector2d( e1[1]-e0[1], -(e1[0]-e0[0]) ).stableNormalized(); 
+    double denom = (e0-e1).norm();
+    if (denom < std::numeric_limits<double>::epsilon())
+        return false; // can't check
 
+    Vector2d barys = Vector2d((e1-p).norm(), (e0-p).norm()) / denom;
 	Vector2d e0bary = barys[0]*q1start + barys[1]*q2start;
 	Vector2d e1bary = barys[0]*q1end + barys[1]*q2end;
 	Vector2d apex_vel = q0end-q0start;
