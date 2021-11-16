@@ -210,20 +210,24 @@ void BVHTree<T,DIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex 
         return;
     }
 
-    VolumeIter vBegin, vEnd;
-    ObjectIter oBegin, oEnd;
+    VolumeIter vBegin = nullptr, vEnd = nullptr;
+    ObjectIter oBegin = nullptr, oEnd = nullptr;
     tree->getChildren(idx.first, vBegin, vEnd, oBegin, oEnd);
+    int num_children = 0;
     bool is_l = true;
     for (; vBegin != vEnd; ++vBegin)
     {
         if (is_l) { l = NodeIndex(*vBegin, false); is_l = false; }
         else { r = NodeIndex(*vBegin, false); }
+        num_children++;
     }
     for (; oBegin != oEnd; ++oBegin)
     {
         if (is_l) { l = NodeIndex(oBegin->idx, true); is_l = false; }
         else { r = NodeIndex(oBegin->idx, true); }
+        num_children++;
     }
+    mclAssert(num_children == 2); // assumes binary tree
 }
 
 template <typename T, int DIM>
