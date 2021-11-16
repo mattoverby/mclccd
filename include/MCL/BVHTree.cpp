@@ -4,7 +4,11 @@
 #include "BVHTree.hpp"
 #include "NarrowPhase.hpp"
 #include "ccd_internal/Assert.hpp"
+
+// We use our own edited version of KdBVH
+// so it must be included before Eigen/BVH.
 #include "ccd_internal/KdBVH.hpp"
+#include <unsupported/Eigen/BVH>
 
 #include <tbb/parallel_for.h>
 #include <unordered_set>

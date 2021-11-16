@@ -7,15 +7,14 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef MCL_KDBVH_HPP
-#define MCL_KDBVH_HPP
+#ifndef KDBVH_H_INCLUDED
+#define KDBVH_H_INCLUDED
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 #include <algorithm>
 #include <queue>
-#include <unsupported/Eigen/src/BVH/BVAlgorithms.h>
 
 #include "../BVHLeaf.hpp"
 

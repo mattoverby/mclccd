@@ -7,6 +7,7 @@ project(mclccd_project LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(DownloadProject)
 
 option(MCL_DEBUG "Compile in test mode" OFF)
 option(MCL_BUILD_EXAMPLES "Compile examples" ON)
@@ -28,8 +29,17 @@ find_package(TBB REQUIRED)
 include_directories(SYSTEM ${TBB_INCLUDE_DIRS})
 
 # Eigen
-find_package(EIGEN REQUIRED)
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
+find_package(EIGEN)
+if(EIGEN_FOUND)
+	include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
+else()
+	download_project(PROJ eigen3
+		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+		GIT_TAG master
+		UPDATE_DISCONNECTED 1
+		QUIET)
+	include_directories(SYSTEM ${eigen3_SOURCE_DIR})
+endif()
 
 # Create the library
 file(GLOB SRC
@@ -43,7 +53,6 @@ add_library(mclccd ${SRC})
 if(MCL_BUILD_EXAMPLES)
 
 	# Get libigl (and glad/glfw/eigen) from github using DownloadProject
-	include(DownloadProject)
 	option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF) # off = header only
 	option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
 	option(LIBIGL_WITH_EMBREE            "Use Embree"                   OFF)
