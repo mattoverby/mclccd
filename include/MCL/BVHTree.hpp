@@ -14,15 +14,6 @@ namespace Eigen // Forward declare BVH type, then include in cpp
 namespace mcl
 {
 
-// CollisionPair type
-enum
-{
-    COLLISIONPAIR_INVALID,
-    COLLISIONPAIR_VF,
-    COLLISIONPAIR_EE,
-    COLLISIONPAIR_NUM
-};
-
 // Traversal struct for things like point-in-elem queries
 template <typename T, int DIM>
 class BVHTraverse
@@ -35,17 +26,18 @@ public:
     virtual bool intersectObject(const ObjectType&) = 0; // true if stop traversing
 };
 
+// Wraps Eigen BVH and provides functions for CCD traversal
 template <typename T, int DIM>
 class BVHTree
 {
 public:
     typedef BVHLeaf<T,DIM> LeafType;
     typedef Eigen::Matrix<T,DIM,1> VecType;
-    typedef std::pair<Eigen::Vector4i,int> PairType;
+    typedef std::pair<Eigen::Vector4i,bool> PairType; // [sten, is_vf]
     typedef std::pair<int, bool> NodeIndex; // [index, isleaf]
 
     std::vector<LeafType> leaves;
-    std::shared_ptr<Eigen::KdBVH<T,DIM,LeafType>> tree;
+    std::shared_ptr<Eigen::KdBVH<T,DIM,LeafType> > tree;
 
     struct Options
     {
@@ -54,8 +46,8 @@ public:
         T ee_ccd_eta; // gap for ee narrowphase <= box_eta
         bool reptri; // representative triangles
         bool threaded; // cpu-threaded traverse(...)
-        bool discrete; // discrete check ff/ee at t=1
-        bool continuous; // ccd check from t=0 to t=1
+        bool discrete; // discrete check ff/ee at V1
+        bool continuous; // ccd check from V0 to V1
         bool vf_one_sided; // allow pass-through if norm dir
         bool ee_robust; // check VV and VE
         Options() :
@@ -88,35 +80,43 @@ public:
     // Update BVH using raw data.
     void update(const T* V0, const T* V1, const int *P, int np, int pdim,
         const int *active = nullptr);
-
+    
     // Traverses tree and checks from V0 to V1 with P = edges (DIM=2) or faces (DIM==3).
     // Calls narrow_phase, append_pair, and append_discrete.
+    void traverse(const T* V0, const T* V1, const int *P) const;
+
+    // Traverse but with Eigen vectors (makes RowMajor copies)
     template <typename DerivedV, typename DerivedP>
     inline void traverse(
         const Eigen::MatrixBase<DerivedV> &V0,
         const Eigen::MatrixBase<DerivedV> &V1,
         const Eigen::MatrixBase<DerivedP> &P);
     
-    // Traverse with raw data.
-    void traverse(const T* V0, const T* V1, const int *P) const;
-    
     // Traverse with iterator
     void traverse(BVHTraverse<T,DIM> *traverser) const;
 
     // This function is called from a thread during CCD if two primitives collide
-    // (and options.continuous==true).
-    std::function<void(const Eigen::Vector4i &sten, int type, const T& toi)> append_pair;
-
-    // Return true if the candidate pair should be skipped before narrow phase.
-    std::function<bool(const Eigen::Vector4i &sten, int type)> filter_pair;
+    // (and options.continuous==true). It's how you retrieve continuous collisions.
+    // It is called from parallel threads (if options.threaded==true).
+    // If is_vf==false, it is an edge-edge collision.
+    std::function<void(const Eigen::Vector4i &sten, bool is_vf, const T& toi)> append_pair;
 
     // This function is called from a thread if there is a discrete isect
-    // (and options.discrete==true). Returns true to exit traveral immediately.
+    // (and options.discrete==true). It's how you retrieve discrete collisions.
+    // It is called from parallel threads (if options.threaded==true).
+    // Return true to exit traversal immediately.
     std::function<bool(int p0, int p1)> append_discrete;
 
-    // Peforms narrowphase to return toi (negative if no hit). If not set,
-    // defaults to CTCD kernels.
-    std::function<T(const Eigen::Vector4i &sten, int type)> narrow_phase;
+    // Optional:
+    // Return true if the candidate pair should be skipped before narrow phase.
+    // If is_vf==false, it is an edge-edge query.
+    std::function<bool(const Eigen::Vector4i &sten, bool is_vf)> filter_pair;
+
+    // Optional:
+    // Performs narrowphase to return time of impact (negative if no hit).
+    // If not set, defaults to CTCD kernels.
+    // If is_vf==false, it is an edge-edge query.
+    std::function<T(const Eigen::Vector4i &sten, bool is_vf)> narrow_phase;
 
 protected:
 
@@ -126,7 +126,7 @@ protected:
 
     // Creates list of staring node pairs for traversal
     void make_frontlist(const NodeIndex &idx,
-        std::vector<std::pair<NodeIndex,NodeIndex>> &queue) const;
+        std::vector<std::pair<NodeIndex,NodeIndex> > &queue) const;
 
     // Recursive traversal
     void collide(const T* V0, const T* V1, const int *P,
@@ -141,7 +141,7 @@ protected:
     bool boxes_intersect(const NodeIndex &left, const NodeIndex &right) const;
 
     T default_narrow_phase(const T* V0, const T* V1,
-        const Eigen::Vector4i &sten, int type) const;
+        const Eigen::Vector4i &sten, bool is_vf) const;
 
     bool default_discrete_test(const T* V, const int *p0, const int *p1) const;
 

@@ -12,7 +12,6 @@
 
 #include <tbb/parallel_for.h>
 #include <unordered_set>
-#include <iostream>
 
 namespace mcl
 {
@@ -20,7 +19,7 @@ namespace mcl
 template <typename T, int DIM>
 BVHTree<T,DIM>::BVHTree()
 {
-    tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType>>();
+    tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType> >();
 }
 
 template <typename T, int DIM>
@@ -29,7 +28,7 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
     if (np == 0)
     {
         leaves.clear();
-        tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType>>();
+        tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType> >();
         return;
     }
 
@@ -198,8 +197,8 @@ void BVHTree<T,DIM>::make_frontlist(const NodeIndex &idx,
 template <typename T, int DIM>
 void BVHTree<T,DIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex &r) const
 {
-    typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM>>::VolumeIterator VolumeIter;
-    typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM>>::ObjectIterator ObjectIter;
+    typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM> >::VolumeIterator VolumeIter;
+    typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM> >::ObjectIterator ObjectIter;
     l.first = -1;
     l.second = false;
     r.first = -1;
@@ -348,7 +347,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         pairs.emplace_back();
         PairType &pair = pairs.back();
-        pair.second = COLLISIONPAIR_VF;
+        pair.second = true; // is_vf
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f0[i];
@@ -371,7 +370,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         pairs.emplace_back();
         PairType &pair = pairs.back();
-        pair.second = COLLISIONPAIR_VF;
+        pair.second = true; // is_vf
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f1[i];
@@ -400,7 +399,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
             pairs.emplace_back();
             PairType &pair = pairs.back();
-            pair.second = COLLISIONPAIR_EE;
+            pair.second = false; // is not vf
             pair.first = Eigen::Vector4i(f0[sten[0]], f0[sten[1]], f1[sten[2]], f1[sten[3]]);
 
             if (filter_pair != nullptr)
@@ -439,7 +438,7 @@ bool BVHTree<T,DIM>::boxes_intersect(const NodeIndex &left, const NodeIndex &rig
 }
 
 template <typename T, int DIM>
-T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i &sten, int type) const
+T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i &sten, bool is_vf) const
 {
     VecType verts0[DIM+1], verts1[DIM+1];
     for (int i=0; i<DIM+1; ++i)
@@ -454,11 +453,11 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
 
     T toi = -1;
     int hit = 0;
-    if (type == COLLISIONPAIR_VF)
+    if (is_vf)
     {
         hit = NarrowPhase<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, options.vf_one_sided, toi);
     }
-    else if (type == COLLISIONPAIR_EE)
+    else
     {
         hit = NarrowPhase<T,DIM>::query_ccd_ee(verts0, verts1, options.ee_ccd_eta, options.ee_robust, toi);
     }
