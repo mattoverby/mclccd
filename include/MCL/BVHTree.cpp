@@ -12,6 +12,7 @@
 
 #include <tbb/parallel_for.h>
 #include <unordered_set>
+#include <set>
 #include <string>
 
 namespace mcl
@@ -50,22 +51,8 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
     // Update representative triangles
     if (options.reptri && update_reptri)
     {
-        struct pair_hash
-        {
-            inline std::size_t operator()(const std::pair<int,int> & v) const
-            {
-                int v0 = v.first;
-                int v1 = v.second;
-                if (v1 < v0)
-                    std::swap(v0, v1);
-
-                std::string h = std::to_string(v0) + ' ' + std::to_string(v1);
-                return std::hash<std::string>{}(h);
-            }
-        };
-
         std::unordered_set<int> seen_verts;
-        std::unordered_set<std::pair<int,int>, pair_hash> seen_edges;
+        std::set<std::string> seen_edges;
 
         for(int i=0; i<np; ++i)
         {
@@ -84,7 +71,9 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
 
                 int e0 = vi;
                 int e1 = P[i*pdim+(j+1)%3];
-                bool e_not_seen = seen_edges.emplace(e0, e1).second;
+                if (e1 < e0) { std::swap(e0, e1); }
+                std::string h = std::to_string(e0)+' '+std::to_string(e1);
+                bool e_not_seen = seen_edges.emplace(h).second;
                 if (e_not_seen)
                     leaf.e[j]=1;
             }
