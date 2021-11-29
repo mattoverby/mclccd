@@ -70,7 +70,7 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
                     continue;
 
                 int e0 = vi;
-                int e1 = P[i*pdim+(j+1)%3];
+                int e1 = P[i*pdim+((j+1)%3)];
                 if (e1 < e0) { std::swap(e0, e1); }
                 std::string h = std::to_string(e0)+' '+std::to_string(e1);
                 bool e_not_seen = seen_edges.emplace(h).second;
