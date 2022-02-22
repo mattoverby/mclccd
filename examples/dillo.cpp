@@ -37,8 +37,8 @@ int main(int, char**)
     std::cout << "Loading the mesh: " << std::flush;
     MatrixXd V_;
     MatrixXi F_;
-    if (!igl::readPLY(MCL_CCD_ROOT_DIR "/examples/data/armadillo.ply", V_, F_)) // no intersections but small elements
-    //if (!igl::readOBJ(MCL_CCD_ROOT_DIR "/examples/data/hand.obj", V_, F_)) // has discrete self-intersections
+    if (!igl::readPLY(MCLCCD_ROOT_DIR "/examples/data/armadillo.ply", V_, F_)) // no intersections but small elements
+    //if (!igl::readOBJ(MCLCCD_ROOT_DIR "/examples/data/hand.obj", V_, F_)) // has discrete self-intersections
         return EXIT_FAILURE;
 
     std::cout << "Num faces: " << F_.rows() << ", num verts: " << V_.rows() << std::endl;
