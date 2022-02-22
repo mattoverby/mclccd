@@ -114,7 +114,7 @@ public:
 
     // Optional:
     // Performs narrowphase to return time of impact (negative if no hit).
-    // If not set, defaults to CTCD kernels.
+    // If not set, defaults to ACCD kernels.
     // If is_vf==false, it is an edge-edge query.
     std::function<T(const Eigen::Vector4i &sten, bool is_vf)> narrow_phase;
 
