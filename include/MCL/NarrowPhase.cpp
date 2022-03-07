@@ -611,15 +611,136 @@ int NarrowPhaseACCD<T,DIM>::query_ccd_vf(
     const NarrowPhaseACCD<T,DIM>::VecType *verts1,
     const T &eta,
     bool test_wrong_side,
-    T &t_impact) { return 0; }
+    T &t_impact)
+{
+    mclAssert(test_wrong_side == false, "TODO: Test wrong side collision");
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, true, t_impact);
+    return hit;
+}
 
 template<typename T, int DIM>
 int NarrowPhaseACCD<T,DIM>::query_ccd_ee(
     const NarrowPhaseACCD<T,DIM>::VecType *verts0,
     const NarrowPhaseACCD<T,DIM>::VecType *verts1,
     const T &eta,
-    T &t_impact) { return 0; }
+    T &t_impact)
+{
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, false, t_impact);
+    return int(hit);
+}
 
+
+template<typename T, int DIM>
+bool NarrowPhaseACCD<T,DIM>::additive_ccd(
+    const VecType *verts0, const VecType *verts1,
+    const T &eta, // gap
+    bool is_vf,
+    T &t_impact)
+{
+    using namespace Eigen;
+    constexpr int ns = DIM+1; // size of stencil
+    T s = 1; // scaling factor
+    T xsi = eta; // minimal sep
+    T t_c = 1; // global min t (for line search)
+    mclAssert((!is_vf && ns==4) || is_vf);
+
+    // Displacement vectors and current x
+    VecType p[ns];
+    VecType x[ns];
+    VecType p_bar = VecType::Zero();
+    for (int i=0; i<ns; ++i)
+    {
+        p[i] = verts1[i] - verts0[i];
+        x[i] = verts0[i];
+        p_bar += T(1)/T(ns) * p[i];
+    }
+
+    for (int i=0; i<ns; ++i) {
+        p[i] -= p_bar;
+    }
+
+    T l_p_first = 0;
+    T l_p_second = 0;
+    for (int i=0; i<ns; ++i)
+    {
+        bool is_first = is_vf ? i==0 : i<=1;
+        if (is_first) { l_p_first = std::max(l_p_first, p[i].norm()); }
+        else { l_p_second = std::max(l_p_second, p[i].norm()); }
+    }
+    T l_p = l_p_first + l_p_second;
+    if (l_p <= 0) {
+        return false;
+    }
+
+    // We use dist instead of squared dist (line 8 of Alg 1.)
+    T d = pair_distance(x, is_vf);
+    T g = s * (d*d - xsi*xsi) / (d - xsi);
+    T t = 0;
+    T t_l = (1-s)*(d*d - xsi*xsi) / ((d + xsi)*l_p);
+
+    int iter = 0;
+    int max_iter = 10000;
+    for (; iter<max_iter; ++iter)
+    {
+        for (int i=0; i<ns; ++i) {
+            x[i] = x[i] + t_l * p[i];
+        }
+
+        T d = pair_distance(x, is_vf);
+        T eps = (d*d - xsi*xsi) / (d + xsi);
+        if (t > 0 && iter > 0 && eps < g) {
+            break;
+        }
+
+        t += t_l;
+        if (t > t_c) {
+            return false;
+        }
+
+        t_l = 0.9 * (d*d - xsi*xsi) / ((d + xsi)*l_p);
+    }
+
+    mclAssert(iter < max_iter, "Failed to find solution");
+    t_impact = t;
+    return true;
+}
+
+template<typename T, int DIM>
+T NarrowPhaseACCD<T,DIM>::pair_distance(
+    const VecType *v,
+    bool is_vf)
+{
+    using namespace Eigen;
+    constexpr int ns = DIM+1; // size of stencil
+
+    // TODO: Use templated MCL/Projection kernels
+    T d = 0;
+    if (is_vf)
+    {
+        mclAssert(ns == 4, "TODO: 2D");
+        Vector4d barys = Vector4d::Zero();
+        Vector3d vfd = ctcd::vertexFaceDistance(
+            v[0].template cast<double>().template head<3>(),
+            v[1].template cast<double>().template head<3>(),
+            v[2].template cast<double>().template head<3>(),
+            v[3].template cast<double>().template head<3>(),
+            barys[0], barys[1], barys[2]);
+        d = vfd.norm();
+    }
+    else
+    {
+        mclAssert(ns == 4, "EE must be 3D");
+        Vector4d barys = Vector4d::Zero();
+        Vector3d eed = ctcd::edgeEdgeDistance(
+            v[0].template cast<double>().template head<3>(),
+            v[1].template cast<double>().template head<3>(),
+            v[2].template cast<double>().template head<3>(),
+            v[3].template cast<double>().template head<3>(),
+            barys[0], barys[1], barys[2], barys[4]);
+        d = eed.norm();
+    }
+    return d;
+}
 
 // ---------------------------------------------------------
 //	Defines

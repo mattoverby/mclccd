@@ -90,6 +90,17 @@ public:
         const VecType *v0, const VecType *v1,
         const T &eta, // gap
         T &t_impact);
+
+    static bool additive_ccd(
+        const VecType *v0, const VecType *v1,
+        const T &eta, // gap
+        bool is_vf,
+        T &t_impact);
+
+    // Returns distance between pairs (VF or EE)
+    static T pair_distance(
+        const VecType *v,
+        bool is_vf);
 };
 
 } // ns mcl
