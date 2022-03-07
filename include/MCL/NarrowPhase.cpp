@@ -681,8 +681,22 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     // We use dist instead of squared dist (line 8 of Alg 1.)
     T d = pair_distance(x, is_vf);
     T g = s * (d*d - xsi*xsi) / (d - xsi);
-    T t = 0;
+    t_impact = 0;
     T t_l = (1-s)*(d*d - xsi*xsi) / ((d + xsi)*l_p);
+
+    // Before the loop check if we're already active
+    if (d <= xsi)
+    {
+        if (is_vf && test_wrong_side_vf)
+        {
+            if (!NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, 0)) {
+                return true;
+            }
+        }
+        else {
+            return true;
+        }
+    }
 
     int iter = 0;
     int max_iter = 10000;
@@ -694,12 +708,12 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
 
         T d = pair_distance(x, is_vf);
         T eps = (d*d - xsi*xsi) / (d + xsi);
-        if (t > 0 && iter > 0 && eps < g)
+        if (t_impact > 0 && iter > 0 && eps < g)
         {
             // TODO test this
             bool wrong_side = false;
             if (is_vf && test_wrong_side_vf) {
-                wrong_side = NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, t);
+                wrong_side = NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, t_impact);
             }
 
             if (!wrong_side) {
@@ -707,8 +721,8 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
             }
         }
 
-        t += t_l;
-        if (t > t_c) {
+        t_impact += t_l;
+        if (t_impact > t_c) {
             return false;
         }
 
@@ -716,7 +730,6 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     }
 
     mclAssert(iter < max_iter, "Failed to find solution");
-    t_impact = t;
     return true;
 }
 
@@ -781,3 +794,4 @@ template class mcl::NarrowPhaseACCD<double,3>;
 template class mcl::NarrowPhaseACCD<float,3>;
 
 } // ns mcl
+
