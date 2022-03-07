@@ -44,8 +44,6 @@ class NarrowPhaseCTCD
 {
 public:
     typedef Eigen::Matrix<T,DIM,1> VecType;
-    using Vec3 = Eigen::Matrix<T,3,1>;
-    using Vec2 = Eigen::Matrix<T,2,1>;
 
     // Returns:
     // 0 = not colliding
@@ -98,6 +96,7 @@ public:
         T &t_impact);
 
     // Returns distance between pairs (VF or EE)
+    // If error, returns -1
     static T pair_distance(
         const VecType *v,
         bool is_vf);

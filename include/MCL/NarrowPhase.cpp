@@ -6,6 +6,7 @@
 #include "ccd_internal/CTCD.hpp"
 #include "ccd_internal/Distance.hpp"
 #include "ccd_internal/tt_isect.hpp"
+#include "ccd_internal/Projection.hpp"
 
 #include <limits>
 
@@ -710,36 +711,39 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
     const VecType *v,
     bool is_vf)
 {
-    using namespace Eigen;
+    using Vec3 = Eigen::Matrix<T,3,1>;
+    using Vec2 = Eigen::Matrix<T,2,1>;
     constexpr int ns = DIM+1; // size of stencil
+    mclAssert(DIM==2 || DIM==3);
 
-    // TODO: Use templated MCL/Projection kernels
-    T d = 0;
-    if (is_vf)
+    if (DIM==2)
     {
-        mclAssert(ns == 4, "TODO: 2D");
-        Vector4d barys = Vector4d::Zero();
-        Vector3d vfd = ctcd::vertexFaceDistance(
-            v[0].template cast<double>().template head<3>(),
-            v[1].template cast<double>().template head<3>(),
-            v[2].template cast<double>().template head<3>(),
-            v[3].template cast<double>().template head<3>(),
-            barys[0], barys[1], barys[2]);
-        d = vfd.norm();
+        mclAssert(is_vf, "2D must be VF (vertex-edge)");
+        Vec2 v0 = v[0].template head<2>();
+        Vec2 v1 = v[1].template head<2>();
+        Vec2 v2 = v[2].template head<2>();
+        Vec2 pt = mcl::ccd_internal::point_on_edge<T>(v0, v1, v2);
+        return (v0-pt).norm();
     }
     else
     {
-        mclAssert(ns == 4, "EE must be 3D");
-        Vector4d barys = Vector4d::Zero();
-        Vector3d eed = ctcd::edgeEdgeDistance(
-            v[0].template cast<double>().template head<3>(),
-            v[1].template cast<double>().template head<3>(),
-            v[2].template cast<double>().template head<3>(),
-            v[3].template cast<double>().template head<3>(),
-            barys[0], barys[1], barys[2], barys[4]);
-        d = eed.norm();
+        Vec3 v0 = v[0].template head<3>();
+        Vec3 v1 = v[1].template head<3>();
+        Vec3 v2 = v[2].template head<3>();
+        Vec3 v3 = v[3].template head<3>();
+        if (is_vf)
+        {
+            Vec3 pt = mcl::ccd_internal::point_on_triangle<T>(v0, v1, v2, v3);
+            return (v0-pt).norm();
+        }
+        else
+        {
+            Eigen::Matrix<T,4,1> b = Eigen::Matrix<T,4,1>::Zero();
+            Vec3 eed = mcl::ccd_internal::edge_to_edge(v0, v1, v2, v3, b);
+            return eed.norm();
+        }
     }
-    return d;
+    return -1;
 }
 
 // ---------------------------------------------------------
