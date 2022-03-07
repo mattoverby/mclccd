@@ -89,10 +89,14 @@ public:
         const T &eta, // gap
         T &t_impact);
 
+    // Alg 1. from doi: 10.1145/3450626.3459767
+    // test_wrong_side_vf only checked if VF
+    // and is currently untested.
     static bool additive_ccd(
         const VecType *v0, const VecType *v1,
         const T &eta, // gap
         bool is_vf,
+        bool test_wrong_side_vf,
         T &t_impact);
 
     // Returns distance between pairs (VF or EE)

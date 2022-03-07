@@ -614,9 +614,10 @@ int NarrowPhaseACCD<T,DIM>::query_ccd_vf(
     bool test_wrong_side,
     T &t_impact)
 {
-    mclAssert(test_wrong_side == false, "TODO: Test wrong side collision");
-    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, true, t_impact);
-    return hit;
+    constexpr bool is_vf = true;
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta,
+        is_vf, test_wrong_side, t_impact);
+    return int(hit);
 }
 
 template<typename T, int DIM>
@@ -626,7 +627,10 @@ int NarrowPhaseACCD<T,DIM>::query_ccd_ee(
     const T &eta,
     T &t_impact)
 {
-    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, false, t_impact);
+    constexpr bool is_vf = false;
+    constexpr bool test_wrong_side = false;
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta,
+        is_vf, test_wrong_side, t_impact);
     return int(hit);
 }
 
@@ -636,6 +640,7 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     const VecType *verts0, const VecType *verts1,
     const T &eta, // gap
     bool is_vf,
+    bool test_wrong_side_vf,
     T &t_impact)
 {
     using namespace Eigen;
@@ -689,8 +694,17 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
 
         T d = pair_distance(x, is_vf);
         T eps = (d*d - xsi*xsi) / (d + xsi);
-        if (t > 0 && iter > 0 && eps < g) {
-            break;
+        if (t > 0 && iter > 0 && eps < g)
+        {
+            // TODO test this
+            bool wrong_side = false;
+            if (is_vf && test_wrong_side_vf) {
+                wrong_side = NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, t);
+            }
+
+            if (!wrong_side) {
+                break;
+            }
         }
 
         t += t_l;
