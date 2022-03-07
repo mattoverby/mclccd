@@ -43,7 +43,8 @@ file(GLOB SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.cpp)
 add_library(mcl-ccd ${SRC})
-target_link_libraries(mcl-ccd Eigen3::Eigen TBB::tbb)
+target_link_libraries(mcl-ccd PUBLIC Eigen3::Eigen TBB::tbb)
+target_include_directories(mcl-ccd INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 add_library(mcl::ccd ALIAS mcl-ccd)
 
 # build examples
