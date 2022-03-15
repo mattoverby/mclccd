@@ -81,7 +81,6 @@ public:
     static int query_ccd_vf(
         const VecType *v0, const VecType *v1,
         const T &eta, // gap
-        bool test_wrong_side,
         T &t_impact);
 
     static int query_ccd_ee(
@@ -96,7 +95,6 @@ public:
         const VecType *v0, const VecType *v1,
         const T &eta, // gap
         bool is_vf,
-        bool test_wrong_side_vf,
         T &t_impact);
 
     // Returns distance between pairs (VF or EE)

@@ -448,7 +448,11 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
     int hit = 0;
     if (is_vf)
     {
-        hit = NarrowPhaseACCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, options.vf_one_sided, toi);
+        if (options.vf_one_sided) {
+            hit = NarrowPhaseCTCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, options.vf_one_sided, toi);
+        } else {
+            hit = NarrowPhaseACCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, toi);
+        }
     }
     else
     {

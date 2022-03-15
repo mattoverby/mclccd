@@ -611,12 +611,10 @@ int NarrowPhaseACCD<T,DIM>::query_ccd_vf(
     const NarrowPhaseACCD<T,DIM>::VecType *verts0,
     const NarrowPhaseACCD<T,DIM>::VecType *verts1,
     const T &eta,
-    bool test_wrong_side,
     T &t_impact)
 {
     constexpr bool is_vf = true;
-    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta,
-        is_vf, test_wrong_side, t_impact);
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, is_vf, t_impact);
     return int(hit);
 }
 
@@ -628,9 +626,7 @@ int NarrowPhaseACCD<T,DIM>::query_ccd_ee(
     T &t_impact)
 {
     constexpr bool is_vf = false;
-    constexpr bool test_wrong_side = false;
-    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta,
-        is_vf, test_wrong_side, t_impact);
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, is_vf, t_impact);
     return int(hit);
 }
 
@@ -640,7 +636,6 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     const VecType *verts0, const VecType *verts1,
     const T &eta, // gap
     bool is_vf,
-    bool test_wrong_side_vf,
     T &t_impact)
 {
     using namespace Eigen;
@@ -685,21 +680,12 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     T t_l = (1-s)*(d*d - xsi*xsi) / ((d + xsi)*l_p);
 
     // Before the loop check if we're already active
-    if (d <= xsi)
-    {
-        if (is_vf && test_wrong_side_vf)
-        {
-            if (!NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, 0)) {
-                return true;
-            }
-        }
-        else {
-            return true;
-        }
+    if (d <= xsi) {
+        return true;
     }
 
     int iter = 0;
-    int max_iter = 10000;
+    int max_iter = 1000;
     for (; iter<max_iter; ++iter)
     {
         for (int i=0; i<ns; ++i) {
@@ -710,15 +696,7 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
         T eps = (d*d - xsi*xsi) / (d + xsi);
         if (t_impact > 0 && iter > 0 && eps < g)
         {
-            // TODO test this
-            bool wrong_side = false;
-            if (is_vf && test_wrong_side_vf) {
-                wrong_side = NarrowPhase<T,DIM>::hit_wrong_side_vf(verts0, verts1, t_impact);
-            }
-
-            if (!wrong_side) {
-                break;
-            }
+            break;
         }
 
         t_impact += t_l;
