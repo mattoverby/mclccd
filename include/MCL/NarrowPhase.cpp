@@ -692,7 +692,7 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
             x[i] = x[i] + t_l * p[i];
         }
 
-        T d = pair_distance(x, is_vf);
+        d = pair_distance(x, is_vf);
         T eps = (d*d - xsi*xsi) / (d + xsi);
         if (t_impact > 0 && iter > 0 && eps < g)
         {
@@ -718,7 +718,6 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
 {
     using Vec3 = Eigen::Matrix<T,3,1>;
     using Vec2 = Eigen::Matrix<T,2,1>;
-    constexpr int ns = DIM+1; // size of stencil
     mclAssert(DIM==2 || DIM==3);
 
     if (DIM==2)
