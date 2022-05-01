@@ -49,7 +49,7 @@ public:
         bool discrete; // discrete check ff/ee at V1
         bool continuous; // ccd check from V0 to V1
         bool vf_one_sided; // allow pass-through if norm dir
-        bool ee_robust; // check VV and VE
+        bool ee_robust; // check VV and VE (if CTCD kernels)
         Options() :
             box_eta(1e-6),
             vf_ccd_eta(1e-6),
