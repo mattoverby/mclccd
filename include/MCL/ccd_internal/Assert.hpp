@@ -4,7 +4,9 @@
 #ifndef MCL_ASSERT_HPP
 #define MCL_ASSERT_HPP 1
 
-#include <cstdlib> 
+#include <cstdlib>
+#include <string>
+#include <stdexcept>
 
 namespace mcl
 {

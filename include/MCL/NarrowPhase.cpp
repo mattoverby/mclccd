@@ -6,6 +6,7 @@
 #include "ccd_internal/CTCD.hpp"
 #include "ccd_internal/Distance.hpp"
 #include "ccd_internal/tt_isect.hpp"
+#include "ccd_internal/Projection.hpp"
 
 #include <limits>
 
@@ -190,13 +191,98 @@ bool NarrowPhase<float,3>::query_ray_box(
         bmin.cast<double>(), bmax.cast<double>());
 }
 
+
 // ---------------------------------------------------------
-//	Query CCD
+//	Discrete tests
 // ---------------------------------------------------------
 
 
 template<>
-int NarrowPhase<double,2>::query_ccd_vf(
+bool NarrowPhase<double,3>::discrete_tri_tri(
+    const Eigen::Vector3d *f0, const Eigen::Vector3d *f1)
+{
+    return tritri::tri_tri_overlap_test_3d(
+        (double*)f0[0].data(), (double*)f0[1].data(), (double*)f0[2].data(),
+        (double*)f1[0].data(), (double*)f1[1].data(), (double*)f1[2].data());
+}
+
+template<>
+bool NarrowPhase<float,3>::discrete_tri_tri(
+    const Eigen::Vector3f *f0_, const Eigen::Vector3f *f1_)
+{
+    Eigen::Vector3d f0[3], f1[3];
+    for (int i=0; i<3; ++i)
+    {
+        f0[i] = f0_[i].cast<double>();
+        f1[i] = f1_[i].cast<double>();
+    }
+    return NarrowPhase<double,3>::discrete_tri_tri(f0,f1);
+}
+
+template<> bool NarrowPhase<double,2>::discrete_tri_tri(
+    const Eigen::Vector3d*, const Eigen::Vector3d*) { return false; }
+
+
+template<> bool NarrowPhase<float,2>::discrete_tri_tri(
+    const Eigen::Vector3f*, const Eigen::Vector3f*) { return false; }
+
+
+template<> bool NarrowPhase<double,2>::discrete_edge_edge(
+    const Eigen::Vector2d *e0, const Eigen::Vector2d *e1)
+{
+	// From https://stackoverflow.com/a/565282
+    using namespace Eigen;
+	constexpr double eps = std::numeric_limits<double>::epsilon();
+
+    const Vector2d& p0 = e0[0];
+    const Vector2d& p1 = e0[1];
+    const Vector2d& q0 = e1[0];
+    const Vector2d& q1 = e1[1];
+
+	Vector2d n(q0[0] - p0[0], q0[1] - p0[1]);
+	Vector2d r(p1[0] - p0[0], p1[1] - p0[1]);
+	Vector2d s(q1[0] - q0[0], q1[1] - q0[1]);
+	double rxs = r[0] * s[1] - r[1] * s[0];
+	if (std::abs(rxs) < eps) { return false; } // parallel
+	double nxr = n[0] * r[1] - n[1] * r[0];
+	if (std::abs(nxr) < eps) // collinear
+	{
+		return ((q0[0] - p0[0] < 0) != (q0[0] - p1[0] < 0)) ||
+			((q0[1] - p0[1] < 0) != (q0[1] - p1[1] < 0));
+	}
+	double nxs = n[0] * s[1] - n[1] * s[0];
+	double rxsr = 1.0 / rxs;
+	double t = nxs * rxsr;
+	double u = nxr * rxsr;
+	return (t >= 0) && (t <= 1) && (u >= 0) && (u <= 1);
+}
+
+template<> bool NarrowPhase<float,2>::discrete_edge_edge(
+    const Eigen::Vector2f *e0_, const Eigen::Vector2f *e1_)
+{
+    Eigen::Vector2d e0[3], e1[3];
+    for (int i=0; i<2; ++i)
+    {
+        e0[i] = e0_[i].cast<double>();
+        e1[i] = e1_[i].cast<double>();
+    }
+    return NarrowPhase<double,2>::discrete_edge_edge(e0,e1);
+}
+
+template<> bool NarrowPhase<double,3>::discrete_edge_edge(
+    const Eigen::Vector2d*, const Eigen::Vector2d*) { return false; }
+
+template<> bool NarrowPhase<float,3>::discrete_edge_edge(
+    const Eigen::Vector2f*, const Eigen::Vector2f*) { return false; }
+
+
+// ---------------------------------------------------------
+//	Query CCD with CTCD
+// ---------------------------------------------------------
+
+
+template<>
+int NarrowPhaseCTCD<double,2>::query_ccd_vf(
     const Eigen::Vector2d *verts0,
     const Eigen::Vector2d *verts1,
     const double &eta,
@@ -213,7 +299,7 @@ int NarrowPhase<double,2>::query_ccd_vf(
 		q_AABB.max()[i] += eta;
 	}
 
-	if (!query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
+	if (!NarrowPhase<double,2>::query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
         return 0;
 
 	std::vector<double> all_toi;
@@ -233,7 +319,7 @@ int NarrowPhase<double,2>::query_ccd_vf(
 		int nt = all_toi.size();
 		for (int i=0; i<nt; ++i)
 		{
-			bool wrongside = hit_wrong_side_vf(verts0,verts1,all_toi[i]);
+			bool wrongside = NarrowPhase<double,2>::hit_wrong_side_vf(verts0,verts1,all_toi[i]);
 			if(!wrongside)
 			{
 				actually_hit = true;
@@ -251,9 +337,8 @@ int NarrowPhase<double,2>::query_ccd_vf(
 
 } // end query ccd vf 2d
 
-
 template<>
-int NarrowPhase<double,3>::query_ccd_vf(
+int NarrowPhaseCTCD<double,3>::query_ccd_vf(
     const Eigen::Vector3d *verts0,
     const Eigen::Vector3d *verts1,
     const double &eta,
@@ -274,7 +359,7 @@ int NarrowPhase<double,3>::query_ccd_vf(
 			q_AABB.min()[i] -= eta;
 			q_AABB.max()[i] += eta;
 		}
-		if (!query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
+		if (!NarrowPhase<double,3>::query_ray_box(verts0[0], verts1[0], q_AABB.min(), q_AABB.max()))
             return 0;
 	}
 
@@ -321,7 +406,7 @@ int NarrowPhase<double,3>::query_ccd_vf(
 		for (int i=0; i<nt; ++i)
 		{
 			if (all_toi[i] < 0) { continue; }
-			bool wrongside = hit_wrong_side_vf(verts0,verts1,all_toi[i]);
+			bool wrongside = NarrowPhase<double,3>::hit_wrong_side_vf(verts0,verts1,all_toi[i]);
 			if(!wrongside)
 			{
 				actually_hit = true;
@@ -341,7 +426,7 @@ int NarrowPhase<double,3>::query_ccd_vf(
 } // end query ccd vf
 
 template<>
-int NarrowPhase<float,2>::query_ccd_vf(
+int NarrowPhaseCTCD<float,2>::query_ccd_vf(
 	const Eigen::Vector2f *verts0_,
 	const Eigen::Vector2f *verts1_,
     const float &eta,
@@ -355,13 +440,13 @@ int NarrowPhase<float,2>::query_ccd_vf(
         verts1[i] = verts1_[i].cast<double>();
     }
     double t = t_impact;
-    int ret = NarrowPhase<double,2>::query_ccd_vf(verts0, verts1, eta, test_wrong_side, t);
+    int ret = NarrowPhaseCTCD<double,2>::query_ccd_vf(verts0, verts1, eta, test_wrong_side, t);
     t_impact = t;
     return ret;
 }
 
 template<>
-int NarrowPhase<float,3>::query_ccd_vf(
+int NarrowPhaseCTCD<float,3>::query_ccd_vf(
 	const Eigen::Vector3f *verts0_,
 	const Eigen::Vector3f *verts1_,
     const float &eta,
@@ -375,13 +460,13 @@ int NarrowPhase<float,3>::query_ccd_vf(
         verts1[i] = verts1_[i].cast<double>();
     }
     double t = t_impact;
-    int ret = NarrowPhase<double,3>::query_ccd_vf(verts0, verts1, eta, test_wrong_side, t);
+    int ret = NarrowPhaseCTCD<double,3>::query_ccd_vf(verts0, verts1, eta, test_wrong_side, t);
     t_impact = t;
     return ret;
 }
 
 template<>
-int NarrowPhase<double,3>::query_ccd_ee(
+int NarrowPhaseCTCD<double,3>::query_ccd_ee(
     const Eigen::Vector3d *verts0,
     const Eigen::Vector3d *verts1,
     const double &eta,
@@ -486,12 +571,12 @@ int NarrowPhase<double,3>::query_ccd_ee(
 }
 
 template<>
-int NarrowPhase<double,2>::query_ccd_ee(
+int NarrowPhaseCTCD<double,2>::query_ccd_ee(
     const Eigen::Vector2d*, const Eigen::Vector2d*,
     const double&, bool, double&) { return 0; }
 
 template<>
-int NarrowPhase<float,3>::query_ccd_ee(
+int NarrowPhaseCTCD<float,3>::query_ccd_ee(
     const Eigen::Vector3f *verts0_,
     const Eigen::Vector3f *verts1_,
     const float &eta,
@@ -505,105 +590,185 @@ int NarrowPhase<float,3>::query_ccd_ee(
         verts1[i] = verts1_[i].cast<double>();
     }
     double t = t_impact;
-    int ret = NarrowPhase<double,3>::query_ccd_ee(verts0, verts1, eta, test_vv_and_ve, t);
+    int ret = NarrowPhaseCTCD<double,3>::query_ccd_ee(verts0, verts1, eta, test_vv_and_ve, t);
     t_impact = t;
     return ret;
 }
 
 template<>
-int NarrowPhase<float,2>::query_ccd_ee(
+int NarrowPhaseCTCD<float,2>::query_ccd_ee(
     const Eigen::Vector2f*, const Eigen::Vector2f*,
     const float&, bool, float&) { return 0; }
 
+
 // ---------------------------------------------------------
-//	Discrete tests
+//	Query CCD with ACCD 
 // ---------------------------------------------------------
 
-template<>
-bool NarrowPhase<double,3>::discrete_tri_tri(
-    const Eigen::Vector3d *f0, const Eigen::Vector3d *f1)
+
+template<typename T, int DIM>
+int NarrowPhaseACCD<T,DIM>::query_ccd_vf(
+    const NarrowPhaseACCD<T,DIM>::VecType *verts0,
+    const NarrowPhaseACCD<T,DIM>::VecType *verts1,
+    const T &eta,
+    T &t_impact)
 {
-    return tritri::tri_tri_overlap_test_3d(
-        (double*)f0[0].data(), (double*)f0[1].data(), (double*)f0[2].data(),
-        (double*)f1[0].data(), (double*)f1[1].data(), (double*)f1[2].data());
+    constexpr bool is_vf = true;
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, is_vf, t_impact);
+    return int(hit);
 }
 
-template<>
-bool NarrowPhase<float,3>::discrete_tri_tri(
-    const Eigen::Vector3f *f0_, const Eigen::Vector3f *f1_)
+template<typename T, int DIM>
+int NarrowPhaseACCD<T,DIM>::query_ccd_ee(
+    const NarrowPhaseACCD<T,DIM>::VecType *verts0,
+    const NarrowPhaseACCD<T,DIM>::VecType *verts1,
+    const T &eta,
+    T &t_impact)
 {
-    Eigen::Vector3d f0[3], f1[3];
-    for (int i=0; i<3; ++i)
-    {
-        f0[i] = f0_[i].cast<double>();
-        f1[i] = f1_[i].cast<double>();
-    }
-    return NarrowPhase<double,3>::discrete_tri_tri(f0,f1);
+    constexpr bool is_vf = false;
+    bool hit = NarrowPhaseACCD<T,DIM>::additive_ccd(verts0, verts1, eta, is_vf, t_impact);
+    return int(hit);
 }
 
-template<> bool NarrowPhase<double,2>::discrete_tri_tri(
-    const Eigen::Vector3d*, const Eigen::Vector3d*) { return false; }
 
-
-template<> bool NarrowPhase<float,2>::discrete_tri_tri(
-    const Eigen::Vector3f*, const Eigen::Vector3f*) { return false; }
-
-
-template<> bool NarrowPhase<double,2>::discrete_edge_edge(
-    const Eigen::Vector2d *e0, const Eigen::Vector2d *e1)
+template<typename T, int DIM>
+bool NarrowPhaseACCD<T,DIM>::additive_ccd(
+    const VecType *verts0, const VecType *verts1,
+    const T &eta, // gap
+    bool is_vf,
+    T &t_impact)
 {
-	// From https://stackoverflow.com/a/565282
     using namespace Eigen;
-	constexpr double eps = std::numeric_limits<double>::epsilon();
+    constexpr int ns = DIM+1; // size of stencil
+    T s = 1; // scaling factor
+    T xsi = eta; // minimal sep
+    T t_c = 1; // global min t (for line search)
+    mclAssert((!is_vf && ns==4) || is_vf);
 
-    const Vector2d& p0 = e0[0];
-    const Vector2d& p1 = e0[1];
-    const Vector2d& q0 = e1[0];
-    const Vector2d& q1 = e1[1];
-
-	Vector2d n(q0[0] - p0[0], q0[1] - p0[1]);
-	Vector2d r(p1[0] - p0[0], p1[1] - p0[1]);
-	Vector2d s(q1[0] - q0[0], q1[1] - q0[1]);
-	double rxs = r[0] * s[1] - r[1] * s[0];
-	if (std::abs(rxs) < eps) { return false; } // parallel
-	double nxr = n[0] * r[1] - n[1] * r[0];
-	if (std::abs(nxr) < eps) // collinear
-	{
-		return ((q0[0] - p0[0] < 0) != (q0[0] - p1[0] < 0)) ||
-			((q0[1] - p0[1] < 0) != (q0[1] - p1[1] < 0));
-	}
-	double nxs = n[0] * s[1] - n[1] * s[0];
-	double rxsr = 1.0 / rxs;
-	double t = nxs * rxsr;
-	double u = nxr * rxsr;
-	return (t >= 0) && (t <= 1) && (u >= 0) && (u <= 1);
-}
-
-template<> bool NarrowPhase<float,2>::discrete_edge_edge(
-    const Eigen::Vector2f *e0_, const Eigen::Vector2f *e1_)
-{
-    Eigen::Vector2d e0[3], e1[3];
-    for (int i=0; i<2; ++i)
+    // Displacement vectors and current x
+    VecType p[ns];
+    VecType x[ns];
+    VecType p_bar = VecType::Zero();
+    for (int i=0; i<ns; ++i)
     {
-        e0[i] = e0_[i].cast<double>();
-        e1[i] = e1_[i].cast<double>();
+        p[i] = verts1[i] - verts0[i];
+        x[i] = verts0[i];
+        p_bar += T(1)/T(ns) * p[i];
     }
-    return NarrowPhase<double,2>::discrete_edge_edge(e0,e1);
+
+    for (int i=0; i<ns; ++i) {
+        p[i] -= p_bar;
+    }
+
+    T l_p_first = 0;
+    T l_p_second = 0;
+    for (int i=0; i<ns; ++i)
+    {
+        bool is_first = is_vf ? i==0 : i<=1;
+        if (is_first) { l_p_first = std::max(l_p_first, p[i].norm()); }
+        else { l_p_second = std::max(l_p_second, p[i].norm()); }
+    }
+    T l_p = l_p_first + l_p_second;
+    if (l_p <= 0) {
+        return false;
+    }
+
+    // We use dist instead of squared dist (line 8 of Alg 1.)
+    T d = pair_distance(x, is_vf);
+    T g = s * (d*d - xsi*xsi) / (d - xsi);
+    t_impact = 0;
+    T t_l = (1-s)*(d*d - xsi*xsi) / ((d + xsi)*l_p);
+
+    // Before the loop check if we're already active
+    if (d <= xsi) {
+        return true;
+    }
+
+    int iter = 0;
+    int max_iter = 1000;
+    for (; iter<max_iter; ++iter)
+    {
+        for (int i=0; i<ns; ++i) {
+            x[i] = x[i] + t_l * p[i];
+        }
+
+        d = pair_distance(x, is_vf);
+        T eps = (d*d - xsi*xsi) / (d + xsi);
+        if (t_impact > 0 && iter > 0 && eps < g)
+        {
+            break;
+        }
+
+        t_impact += t_l;
+        if (t_impact > t_c) {
+            return false;
+        }
+
+        t_l = 0.9 * (d*d - xsi*xsi) / ((d + xsi)*l_p);
+    }
+
+    mclAssert(iter < max_iter, "Failed to find solution");
+    return true;
 }
 
-template<> bool NarrowPhase<double,3>::discrete_edge_edge(
-    const Eigen::Vector2d*, const Eigen::Vector2d*) { return false; }
+template<typename T, int DIM>
+T NarrowPhaseACCD<T,DIM>::pair_distance(
+    const VecType *v,
+    bool is_vf)
+{
+    using Vec3 = Eigen::Matrix<T,3,1>;
+    using Vec2 = Eigen::Matrix<T,2,1>;
+    mclAssert(DIM==2 || DIM==3);
 
-template<> bool NarrowPhase<float,3>::discrete_edge_edge(
-    const Eigen::Vector2f*, const Eigen::Vector2f*) { return false; }
+    if (DIM==2)
+    {
+        mclAssert(is_vf, "2D must be VF (vertex-edge)");
+        Vec2 v0 = v[0].template head<2>();
+        Vec2 v1 = v[1].template head<2>();
+        Vec2 v2 = v[2].template head<2>();
+        Vec2 pt = mcl::ccd_internal::point_on_edge<T>(v0, v1, v2);
+        return (v0-pt).norm();
+    }
+    else
+    {
+        Vec3 v0 = v[0].template head<3>();
+        Vec3 v1 = v[1].template head<3>();
+        Vec3 v2 = v[2].template head<3>();
+        Vec3 v3 = v[3].template head<3>();
+        if (is_vf)
+        {
+            Vec3 pt = mcl::ccd_internal::point_on_triangle<T>(v0, v1, v2, v3);
+            return (v0-pt).norm();
+        }
+        else
+        {
+            Eigen::Matrix<T,4,1> b = Eigen::Matrix<T,4,1>::Zero();
+            Vec3 eed = mcl::ccd_internal::edge_to_edge(v0, v1, v2, v3, b);
+            return eed.norm();
+        }
+    }
+    return -1;
+}
 
 // ---------------------------------------------------------
 //	Defines
 // ---------------------------------------------------------
+
 
 template class mcl::NarrowPhase<double,2>;
 template class mcl::NarrowPhase<float,2>;
 template class mcl::NarrowPhase<double,3>;
 template class mcl::NarrowPhase<float,3>;
 
+template class mcl::NarrowPhaseCTCD<double,2>;
+template class mcl::NarrowPhaseCTCD<float,2>;
+template class mcl::NarrowPhaseCTCD<double,3>;
+template class mcl::NarrowPhaseCTCD<float,3>;
+
+template class mcl::NarrowPhaseACCD<double,2>;
+template class mcl::NarrowPhaseACCD<float,2>;
+template class mcl::NarrowPhaseACCD<double,3>;
+template class mcl::NarrowPhaseACCD<float,3>;
+
 } // ns mcl
+
