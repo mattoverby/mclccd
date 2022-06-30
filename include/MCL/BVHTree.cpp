@@ -129,7 +129,7 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
 template <typename T, int DIM>
 void BVHTree<T,DIM>::traverse(const T* V0, const T* V1, const int *P) const
 {
-    if (leaves.size() == 0)
+    if (leaves.size() <= 1)
         return;
 
     // Create a list of initial BVH intersection lists

@@ -36,13 +36,14 @@ if(NOT EIGEN_FOUND)
 endif()
 
 # Create the library
-file(GLOB SRC
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.hpp
+file(GLOB MCLBVH_INCLUDE
+	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.hpp)
+file(GLOB MCLBVH_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.cpp)
-add_library(${PROJECT_NAME} ${SRC})
+add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)
 target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
@@ -68,3 +69,6 @@ if(MCLCCD_BUILD_EXAMPLES)
 	target_link_libraries(dillo ${MCLCCD_DEP_LIBRARIES})
 
 endif()
+
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(FILES ${MCLBVH_INCLUDE} DESTINATION include/MCL)
