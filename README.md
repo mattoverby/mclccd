@@ -11,13 +11,13 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
-## Example
+## Examples
 
-mcl::BVHTree is constructed given a list of vertices and triangles.  Collisions are gathered through
-callbacks (append_pair and append_discrete), the former being CCD and latter being triangle-triangle (3D) or edge-edge (2D). These callbacks are called in parallel during the BVH traversal, and can be disabled in mcl::BVHTree::options.
+mcl::BVHTree is constructed given a list of vertices and triangles. Collisions are gathered through
+callbacks (append_pair and append_discrete), the former being CCD and latter being triangle-triangle (3D) or edge-edge (2D). These callbacks are called in parallel during the BVH traversal.
 
 
-```
+```cpp
 Eigen::MatrixXd V0 = ... // vertices at t=0
 Eigen::MatrixXd V1 = ... // vertices at t=1
 Eigen::MatrixXi F = ... // nf x 3 triangles
@@ -42,7 +42,7 @@ tree.traverse(V0, V1, F); // perform collision detection
 
 Narrow phase kernels use [ACCD](https://doi.org/10.1145/3450626.3459767), a form of conservative advancement, by default. The CCD test can be pre-filtered and replaced using optional callbacks.
 
-```
+```cpp
 tree.filter_pair = [&](const Eigen::Vector4i &sten, bool is_vf)->bool
 {
     // Return true to skip CCD test
@@ -59,8 +59,8 @@ tree.narrow_phase = [&](const Eigen::Vector4i &sten, bool is_vf)->double
 
 Traversers can be used to walk down the BVH.
 
-```
-class PointInTriangle : public mcl::BVHTraverse<double,3>
+```cpp
+class PointInTriangle : public mcl::BVHTraverse<double,2>
 {
 public:
     using mcl::BVHTraverse<double,2>::VolumeType; // mcl::BoundingBox
