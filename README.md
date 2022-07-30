@@ -23,7 +23,7 @@ Eigen::MatrixXi F = ... // nf x 3 triangles
 mcl::BVHTree<double,3> tree;
 tree.update(V0, V1, F); // updates BVH
 tbb::concurrent_vector<MyContactType> contacts;
-tbb::concurrent_unordered_set<std::pair<int,int>> discrete;
+tbb::concurrent_vector<std::pair<int,int>> discrete;
 tree.append_pair = [&](const Eigen::Vector4i &sten, int type, const double &toi)->void
 {
     // Gather CCD contacts through callback:
@@ -39,7 +39,7 @@ tree.append_discrete = [&](int p0, int p1)->bool
 tree.traverse(V0, V1, F); // perform collision detection
 ```
 
-By default, CCD uses [ACCD](https://doi.org/10.1145/3450626.3459767) narrow phase kernels, a form of conservative advancement that robustly supports large thickness/gaps. The CCD test can be pre-filtered and replaced using custome functions via optional callbacks:
+By default, CCD uses [ACCD](https://doi.org/10.1145/3450626.3459767) narrow phase kernels, a form of conservative advancement that robustly supports large thickness/gaps. The CCD test can be pre-filtered and replaced using custom functions via optional callbacks:
 
 ```cpp
 tree.filter_pair = [&](const Eigen::Vector4i &sten, bool is_vf)->bool
