@@ -11,10 +11,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
-## Examples
+## Example Collision Detection
 
-mcl::BVHTree is constructed given a list of vertices and triangles. Collisions are gathered through
-callbacks (append_pair and append_discrete), the former being CCD and latter being triangle-triangle (3D) or edge-edge (2D). These callbacks are called in parallel during the BVH traversal.
+Collisions are gathered through callbacks (append_pair and append_discrete), the former being CCD and latter being triangle-triangle (3D) or edge-edge (2D). These callbacks are called in parallel during the BVH traversal.
 
 
 ```cpp
@@ -40,7 +39,7 @@ tree.append_discrete = [&](int p0, int p1)->bool
 tree.traverse(V0, V1, F); // perform collision detection
 ```
 
-Narrow phase kernels use [ACCD](https://doi.org/10.1145/3450626.3459767), a form of conservative advancement, by default. The CCD test can be pre-filtered and replaced using optional callbacks.
+By default, CCD uses [ACCD](https://doi.org/10.1145/3450626.3459767) narrow phase kernels, a form of conservative advancement that robustly supports large thickness/gaps. The CCD test can be pre-filtered and replaced using custome functions via optional callbacks:
 
 ```cpp
 tree.filter_pair = [&](const Eigen::Vector4i &sten, bool is_vf)->bool
@@ -57,7 +56,9 @@ tree.narrow_phase = [&](const Eigen::Vector4i &sten, bool is_vf)->double
 
 ```
 
-Traversers can be used to walk down the BVH.
+### General BVH Traversal
+
+Apart from continuous and discrete collision detections, traversers can be used to walk down the BVH. Two functions need to be implemented in the derived class to determine if the branch should be traversed (intersectVolume) and to process the leaf (intersectObject). For example, a generic point-in-triangle traverser is implemented below:
 
 ```cpp
 class PointInTriangle : public mcl::BVHTraverse<double,2>
@@ -84,18 +85,14 @@ public:
 };
 ```
 
-Which are invoked using the traverse function
+Traversers are invoked using the mcl::BVHTree::traverse:
 
-```
+```cpp
 Eigen::MatrixXd V = ... // nv x 2 vertices
 Eigen::MatrixXi F = ... // nf x 3 triangles
 mcl::BVHTree<double,2> tree;
 tree.update(V, V, F);
 PointInTriangle pt_in_tri(Eigen::Vector3d(0,0,0));
 tree.traverse(&pt_in_tri);
-for (size_t i=0; i<pt_in_tri.isects.size(); ++i)
-{
-    // process intersections...
-}
-
+// intersections in pt_in_tr.isects
 ```
