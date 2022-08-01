@@ -66,7 +66,9 @@ if(MCLCCD_BUILD_EXAMPLES)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/examples/dillo.cpp)
+	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/examples/traverser.cpp)
 	target_link_libraries(dillo ${MCLCCD_DEP_LIBRARIES})
+	target_link_libraries(traverser ${MCLCCD_DEP_LIBRARIES})
 
 endif()
 
