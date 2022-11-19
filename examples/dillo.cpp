@@ -3,7 +3,6 @@
 
 #include "MCL/BVHTree.hpp"
 #include "MCL/NarrowPhase.hpp"
-#include "MCL/ccd_internal/Timer.hpp"
 
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_vector.h>
@@ -13,6 +12,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/readPLY.h>
 #include <igl/readOBJ.h>
+#include <igl/Timer.h>
 
 // Collects AABB nodes for rendering
 class NodeCollector : public mcl::BVHTraverse<double,3>
@@ -31,7 +31,7 @@ typedef Eigen::Matrix<int,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> RowMatr
 // Load and render a dillo
 int main(int, char**)
 {
-    mcl::Timer timer;
+    igl::Timer timer;
 
     using namespace Eigen;
     std::cout << "Loading the mesh: " << std::flush;
@@ -56,7 +56,7 @@ int main(int, char**)
     mcl::BVHTree<double,3> tree;
     tree.options.box_eta = std::numeric_limits<float>::epsilon();
     tree.update(V, V, F);
-    std::cout << timer.get_ms() << " ms" << std::endl;
+    std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // Traverse BVH for intersections
     std::cout << "Performing CCD: " << std::flush; 
@@ -75,7 +75,7 @@ int main(int, char**)
         return false; // don't stop traversing
     };
     tree.traverse(V, V, F);
-    std::cout << timer.get_ms() << " ms" << std::endl;
+    std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
     std::cout << "Num discrete isect: " << discrete.size() << std::endl;
     std::cout << "Num ccd isect: " << pairs.size() << std::endl;
 
@@ -84,7 +84,7 @@ int main(int, char**)
     timer.start();
     NodeCollector collector;
     tree.traverse(&collector);
-    std::cout << timer.get_ms() << " ms" << std::endl;
+    std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
     MatrixXd e0(collector.edges0.size(), 3);
     MatrixXd e1(collector.edges1.size(), 3);
     int ne = e0.rows();
@@ -144,4 +144,3 @@ bool NodeCollector::intersectVolume(const VolumeType &volume)
     edges0.emplace_back(c); edges1.emplace_back(max);
     return true;
 }
-
