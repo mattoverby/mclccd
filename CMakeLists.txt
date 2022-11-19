@@ -16,7 +16,9 @@ if (MCLCCD_DEBUG)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wundef -Wextra -Wno-long-long -Wlogical-op -Wshadow -Wmaybe-uninitialized")
 	endif()
 else()
-	set(CMAKE_BUILD_TYPE Release)
+	if (NOT CMAKE_BUILD_TYPE)
+		set(CMAKE_BUILD_TYPE "Release")
+	endif()
 endif()
 
 # thread building blocks
@@ -24,13 +26,14 @@ endif()
 find_package(TBB REQUIRED)
 
 # Eigen, download if not found
-find_package(EIGEN)
+find_package(Eigen3)
 if(NOT EIGEN_FOUND)
 	FetchContent_Declare(
 		Eigen3
 		QUIET
 		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
 		GIT_TAG 3.4.0
+		GIT_SHALLOW TRUE
 	)
 	FetchContent_MakeAvailable(Eigen3)
 endif()
