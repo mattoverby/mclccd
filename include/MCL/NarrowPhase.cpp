@@ -2,7 +2,6 @@
 // Distributed under the MIT License.
 
 #include "NarrowPhase.hpp"
-#include "ccd_internal/Assert.hpp"
 #include "ccd_internal/CTCD.hpp"
 #include "ccd_internal/Distance.hpp"
 #include "ccd_internal/tt_isect.hpp"
@@ -311,7 +310,7 @@ int NarrowPhaseCTCD<double,2>::query_ccd_vf(
 	// Wrong side collision?
 	if (ve && test_wrong_side)
 	{
-		mclAssert(all_toi.size()>0);
+		assert(all_toi.size()>0);
 
 		// Loop t. Find first t that is not wrong-side-collision
 		std::sort(all_toi.begin(), all_toi.end());
@@ -397,7 +396,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_vf(
 	// Wrong side collision?
 	if (hit && test_wrong_side)
 	{
-		mclAssert((int)all_toi.size() > 0);
+		assert((int)all_toi.size() > 0);
 
 		// Loop t. Find first t that is not wrong-side-collision
 		std::sort(all_toi.begin(), all_toi.end());
@@ -420,7 +419,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_vf(
 
 	} // end test wrong side
 
-	mclAssert(std::isfinite(t_impact));
+	assert(std::isfinite(t_impact));
 	return hit;
 
 } // end query ccd vf
@@ -535,7 +534,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_ee(
     // Collision result okay?
     if (hit)
     {
-        mclAssert((int)all_toi.size() > 0);
+        assert((int)all_toi.size() > 0);
 		std::sort(all_toi.begin(), all_toi.end());
 
         // Loop t. Find first t that is not parallel
@@ -566,7 +565,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_ee(
         else { return 1; }
     } // end test wrong side
 
-	mclAssert(std::isfinite(t_impact));
+	assert(std::isfinite(t_impact));
 	return hit;
 }
 
@@ -643,7 +642,7 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     T s = 1; // scaling factor
     T xsi = eta; // minimal sep
     T t_c = 1; // global min t (for line search)
-    mclAssert((!is_vf && ns==4) || is_vf);
+    assert((!is_vf && ns==4) || is_vf);
 
     // Displacement vectors and current x
     VecType p[ns];
@@ -707,7 +706,7 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
         t_l = 0.9 * (d*d - xsi*xsi) / ((d + xsi)*l_p);
     }
 
-    mclAssert(iter < max_iter, "Failed to find solution");
+    assert(iter < max_iter);
     return true;
 }
 
@@ -718,11 +717,11 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
 {
     using Vec3 = Eigen::Matrix<T,3,1>;
     using Vec2 = Eigen::Matrix<T,2,1>;
-    mclAssert(DIM==2 || DIM==3);
+    assert(DIM==2 || DIM==3);
 
     if (DIM==2)
     {
-        mclAssert(is_vf, "2D must be VF (vertex-edge)");
+        assert(is_vf);
         Vec2 v0 = v[0].template head<2>();
         Vec2 v1 = v[1].template head<2>();
         Vec2 v2 = v[2].template head<2>();

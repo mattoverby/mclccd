@@ -3,7 +3,6 @@
 
 #include "BVHTree.hpp"
 #include "NarrowPhase.hpp"
-#include "ccd_internal/Assert.hpp"
 
 // We use our own edited version of KdBVH
 // so it must be included before Eigen/BVH.
@@ -34,9 +33,9 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
         return;
     }
 
-    mclAssert(options.box_eta >= 0);
-    mclAssert(options.vf_ccd_eta >= 0);
-    mclAssert(options.ee_ccd_eta >= 0);
+    assert(options.box_eta >= 0);
+    assert(options.vf_ccd_eta >= 0);
+    assert(options.ee_ccd_eta >= 0);
     options.vf_ccd_eta = std::min(options.vf_ccd_eta, options.box_eta);
     options.ee_ccd_eta = std::min(options.ee_ccd_eta, options.box_eta);
 
@@ -136,7 +135,7 @@ void BVHTree<T,DIM>::traverse(const T* V0, const T* V1, const int *P) const
     std::vector<std::pair<NodeIndex,NodeIndex> > queue;
     queue.reserve(leaves.size());
     make_frontlist(std::make_pair(tree->getRootIndex(), false), queue);
-    mclAssert((int)queue.size() > 0);
+    assert((int)queue.size() > 0);
     std::atomic<int> stop(0);
 
     int nq = queue.size();
@@ -175,14 +174,12 @@ void BVHTree<T,DIM>::make_frontlist(const NodeIndex &idx,
 
     NodeIndex l, r;
     get_children(idx, l, r);
-    mclAssert(l.first >= 0 && r.first >= 0);
+    assert(l.first >= 0 && r.first >= 0);
     make_frontlist(l, queue);
     make_frontlist(r, queue);
 
-    if (l.second == r.second)
-    { // if both leaf, should not have same idx
-        mclAssert(l.first != r.first);
-    }
+    // if both leaf, should not have same idx
+    assert((l.second==r.second) ? (l.first!=r.first) : true);
     
     queue.emplace_back(l, r);
 }
@@ -219,7 +216,7 @@ void BVHTree<T,DIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex 
         else { r = NodeIndex(oBegin->idx, true); }
         num_children++;
     }
-    mclAssert(num_children == 2); // assumes binary tree
+    assert(num_children == 2); // assumes binary tree
 }
 
 template <typename T, int DIM>
@@ -241,11 +238,9 @@ void BVHTree<T,DIM>::collide(
         if (stop.load() > 0) { return; }
     }
 
-    mclAssert(left.first >= 0 && right.first >= 0);
-    if (left.second == right.second)
-    { // if both leaf, not eq
-        mclAssert(left.first != right.first);
-    }
+    // if both leaf, not eq
+    assert(left.first >= 0 && right.first >= 0);
+    assert((left.second == right.second) ? (left.first != right.first) : true);
 
     // Check if nodes intersect or inactive
     if (!boxes_intersect(left,right))
@@ -436,7 +431,7 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
     VecType verts0[DIM+1], verts1[DIM+1];
     for (int i=0; i<DIM+1; ++i)
     {
-        mclAssert(sten[i] >= 0);
+        assert(sten[i] >= 0);
         for (int j=0; j<DIM; ++j)
         {
             verts0[i][j] = V0[sten[i]*DIM+j];
