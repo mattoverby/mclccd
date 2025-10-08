@@ -62,7 +62,7 @@ int main(int, char**)
     using namespace Eigen;
     MatrixXd V, TC, CN, FN;
     MatrixXi F, FTC;
-    std::string obj = MCLCCD_ROOT_DIR "/examples/data/cathead.obj";
+    std::string obj = MCLCCD_ROOT_DIR "/data/cathead.obj";
     igl::readOBJ(obj, V, TC, CN, F, FTC, FN);
     if (!TC.rows() || !FTC.rows()) {
         return EXIT_FAILURE;

@@ -1,0 +1,30 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: clone
+      uses: actions/checkout@v4 # Action to check out your repository
+
+    - name: dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake libtbb-dev libeigen3-dev
+
+    - name: build
+      working-directory: ${{ github.workspace }} 
+      run: |
+        cmake -DMCLCCD_TESTING_ONLY=ON .
+        make -j
+
+    - name: test
+      working-directory: ${{ github.workspace }} 
+      run: make test

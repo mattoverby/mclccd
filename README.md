@@ -52,4 +52,4 @@ tree.narrow_phase = [&](const Eigen::Vector4i &sten, bool is_vf)->double
 
 ### General BVH Traversal
 
-Apart from continuous and discrete collision detections, traversers can be used to walk down the BVH. Two functions need to be implemented in the derived class to determine if the branch should be traversed (intersectVolume) and to process the leaf (intersectObject). See [examples/traverser.cpp](examples/traverser.cpp) for an example.
+Apart from continuous and discrete collision detections, traversers can be used to walk down the BVH. Two functions need to be implemented in the derived class to determine if the branch should be traversed (intersectVolume) and to process the leaf (intersectObject). See [test/traverser.cpp](test/traverser.cpp) for an example.

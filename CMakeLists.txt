@@ -22,39 +22,26 @@ else()
 endif()
 
 # thread building blocks
-# TODO: build this with fetchcontent if not found
 find_package(TBB REQUIRED)
 
-# Eigen, download if not found
-find_package(Eigen3)
-if(NOT EIGEN_FOUND)
-	option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
-	FetchContent_Declare(
-		Eigen3
-		QUIET
-		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-		GIT_TAG 3.4.0
-		GIT_SHALLOW TRUE
-	)
-	FetchContent_MakeAvailable(Eigen3)
-endif()
+# Eigen linalg
+find_package(Eigen3 REQUIRED)
 
 # Create the library
 file(GLOB MCLBVH_INCLUDE
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.hpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.hpp)
 file(GLOB MCLBVH_SRC
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.cpp)
 add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)
 target_include_directories(${PROJECT_NAME} INTERFACE
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party>)
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
 
-# build examples
+# build viewer tests
 if(NOT MCLCCD_TESTING_ONLY)
 
     # Libigl for rendering/interface
@@ -64,8 +51,8 @@ if(NOT MCLCCD_TESTING_ONLY)
 	# Set define for loading objs
 	add_definitions(-DMCLCCD_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
-	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/examples/dillo.cpp)
-	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/examples/traverser.cpp)
+	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/test/dillo.cpp)
+	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/test/traverser.cpp)
 	target_link_libraries(dillo igl::glfw mcl::ccd)
 	target_link_libraries(traverser igl::glfw mcl::ccd)
 
