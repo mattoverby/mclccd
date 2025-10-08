@@ -54,7 +54,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party>)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
 
-# build examples
+# build viewer tests
 if(NOT MCLCCD_TESTING_ONLY)
 
     # Libigl for rendering/interface
@@ -64,8 +64,8 @@ if(NOT MCLCCD_TESTING_ONLY)
 	# Set define for loading objs
 	add_definitions(-DMCLCCD_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
-	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/examples/dillo.cpp)
-	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/examples/traverser.cpp)
+	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/test/dillo.cpp)
+	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/test/traverser.cpp)
 	target_link_libraries(dillo igl::glfw mcl::ccd)
 	target_link_libraries(traverser igl::glfw mcl::ccd)
 
