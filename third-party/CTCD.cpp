@@ -5,6 +5,7 @@
 using namespace Eigen;
 using namespace std;
 namespace mcl {
+namespace ctcd {
 
 static inline bool is_2D( const std::vector<Eigen::Vector3d> &verts ){
     int nv = verts.size();
@@ -865,4 +866,5 @@ bool CTCD::vertexVertexCTCD(const Vector3d &q1start,
     return false;
 }
 
-} // namespace mcl
+} // end namespace ctcd
+} // end namespace mcl

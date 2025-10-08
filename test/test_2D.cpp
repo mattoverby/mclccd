@@ -6,6 +6,6 @@
 int main(int, char**)
 {
     // TODO
-    mcl::BVHTree<double,3> tree;
+    mcl::ccd::BVHTree<double,3> tree;
     return EXIT_SUCCESS;
 }

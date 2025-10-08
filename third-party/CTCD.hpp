@@ -4,10 +4,15 @@
 #include <Eigen/Geometry>
 #include <vector>
 
-namespace mcl {
 
 // Source: Etienne Vouga
 // https://github.com/evouga/collisiondetection
+// changes: added mcl::ctcd namespace
+
+namespace mcl
+{
+namespace ctcd
+{
 
 struct TimeInterval
 {
@@ -151,6 +156,7 @@ private:
 
 };
 
+} // namespace ccd
 } // namespace mcl
 
 #endif

@@ -6,7 +6,7 @@
 
 // We use our own edited version of KdBVH
 // so it must be included before Eigen/BVH.
-#include "ccd_internal/KdBVH.hpp"
+#include "KdBVH.hpp"
 #include <unsupported/Eigen/BVH>
 
 #include <tbb/parallel_for.h>
@@ -15,6 +15,8 @@
 #include <string>
 
 namespace mcl
+{
+namespace ccd
 {
 
 template <typename T, int DIM>
@@ -499,9 +501,10 @@ bool BVHTree<T,DIM>::default_discrete_test(const T* V, const int *p0, const int 
     return false;
 }
 
-} // end ns mcl
+} // end namespace ccd
+} // end namespace mcl
 
-template class mcl::BVHTree<double,3>;
-template class mcl::BVHTree<double,2>;
-template class mcl::BVHTree<float,3>;
-template class mcl::BVHTree<float,2>;
+template class mcl::ccd::BVHTree<double,3>;
+template class mcl::ccd::BVHTree<double,2>;
+template class mcl::ccd::BVHTree<float,3>;
+template class mcl::ccd::BVHTree<float,2>;

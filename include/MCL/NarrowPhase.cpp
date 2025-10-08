@@ -2,16 +2,19 @@
 // Distributed under the MIT License.
 
 #include "NarrowPhase.hpp"
-#include "ccd_internal/CTCD.hpp"
-#include "ccd_internal/Distance.hpp"
-#include "ccd_internal/tt_isect.hpp"
-#include "ccd_internal/Projection.hpp"
+#include "Projection.hpp"
+
+#include "../../third-party/CTCD.hpp"
+#include "../../third-party/Distance.hpp"
+#include "../../third-party/tt_isect.hpp"
 
 #include <limits>
 
 // I need to fix tabbing...
 
 namespace mcl
+{
+namespace ccd
 {
 
 // ---------------------------------------------------------
@@ -76,7 +79,7 @@ bool NarrowPhase<double,3>::hit_wrong_side_vf(
     n.stableNormalize();
 
 	Vector3d barys = Vector3d::Zero();
-	ctcd::vertexFaceDistance(xt[0],xt[1],xt[2],xt[3],barys[0],barys[1],barys[2]);
+	mcl::ctcd::vertexFaceDistance(xt[0],xt[1],xt[2],xt[3],barys[0],barys[1],barys[2]);
 
 	Vector3d apex_vel = ( verts1[0]-verts0[0] );
 	Vector3d face_pt0 = (barys[0]*verts0[1] + barys[1]*verts0[2] + barys[2]*verts0[3]);
@@ -302,7 +305,7 @@ int NarrowPhaseCTCD<double,2>::query_ccd_vf(
         return 0;
 
 	std::vector<double> all_toi;
-	bool ve = CTCD::vertexEdgeCTCD(
+	bool ve = mcl::ctcd::CTCD::vertexEdgeCTCD(
 		verts0[0], verts0[1], verts0[2],
 		verts1[0], verts1[1], verts1[2],
 		eta, t_impact, &all_toi);
@@ -365,7 +368,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_vf(
 	std::vector<double> all_toi;
     auto ccd_vf = [&]()->bool
     {
-        if (CTCD::vertexFaceCTCD(
+        if (mcl::ctcd::CTCD::vertexFaceCTCD(
             verts0[0], verts0[1], verts0[2], verts0[3],
             verts1[0], verts1[1], verts1[2], verts1[3],
             eta, t_impact, &all_toi)) { return true; }
@@ -373,7 +376,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_vf(
         // Vertex-face edges
         for(int edge=0; edge<3; ++edge)
         {
-            if (CTCD::vertexEdgeCTCD(
+            if (mcl::ctcd::CTCD::vertexEdgeCTCD(
                 verts0[0], verts0[1+(edge%3)], verts0[1+ ((edge+1)%3)],
                 verts1[0], verts1[1+(edge%3)], verts1[1+ ((edge+1)%3)],
                 eta, t_impact, &all_toi)) { return true; }
@@ -382,7 +385,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_vf(
         // Vertex-face vertices
         for (int vert=0; vert<3; ++vert)
         {
-            if (CTCD::vertexVertexCTCD(
+            if (mcl::ctcd::CTCD::vertexVertexCTCD(
                 verts0[0], verts0[1+vert],
                 verts1[0], verts1[1+vert],
                 eta, t_impact, &all_toi)) { return true; }
@@ -494,35 +497,35 @@ int NarrowPhaseCTCD<double,3>::query_ccd_ee(
 	std::vector<double> all_toi;
     auto ccd_ee = [&]()->bool
     {
-        if (CTCD::edgeEdgeCTCD(
+        if (mcl::ctcd::CTCD::edgeEdgeCTCD(
             verts0[0], verts0[1], verts0[2], verts0[3],
             verts1[0], verts1[1], verts1[2], verts1[3],
             eta, t_impact, &all_toi)) { return true; }
 
         if (test_vv_and_ve)
         {
-            if (CTCD::vertexEdgeCTCD(verts0[0], verts0[2], verts0[3], verts1[0], verts1[2], verts1[3], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexEdgeCTCD(verts0[0], verts0[2], verts0[3], verts1[0], verts1[2], verts1[3], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexEdgeCTCD(verts0[1], verts0[2], verts0[3], verts1[1], verts1[2], verts1[3], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexEdgeCTCD(verts0[1], verts0[2], verts0[3], verts1[1], verts1[2], verts1[3], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexEdgeCTCD(verts0[2], verts0[0], verts0[1], verts1[2], verts1[0], verts1[1], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexEdgeCTCD(verts0[2], verts0[0], verts0[1], verts1[2], verts1[0], verts1[1], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexEdgeCTCD(verts0[3], verts0[0], verts0[1], verts1[3], verts1[0], verts1[1], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexEdgeCTCD(verts0[3], verts0[0], verts0[1], verts1[3], verts1[0], verts1[1], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexVertexCTCD(verts0[0], verts0[2], verts1[0], verts1[2], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexVertexCTCD(verts0[0], verts0[2], verts1[0], verts1[2], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexVertexCTCD(verts0[0], verts0[3], verts1[0], verts1[3], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexVertexCTCD(verts0[0], verts0[3], verts1[0], verts1[3], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexVertexCTCD(verts0[1], verts0[2], verts1[1], verts1[2], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexVertexCTCD(verts0[1], verts0[2], verts1[1], verts1[2], eta, t_impact, &all_toi))
                 return true;
 
-            if (CTCD::vertexVertexCTCD(verts0[1], verts0[3], verts1[1], verts1[3], eta, t_impact, &all_toi))
+            if (mcl::ctcd::CTCD::vertexVertexCTCD(verts0[1], verts0[3], verts1[1], verts1[3], eta, t_impact, &all_toi))
                 return true;
         }
 
@@ -725,7 +728,7 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
         Vec2 v0 = v[0].template head<2>();
         Vec2 v1 = v[1].template head<2>();
         Vec2 v2 = v[2].template head<2>();
-        Vec2 pt = mcl::ccd_internal::point_on_edge<T>(v0, v1, v2);
+        Vec2 pt = mcl::ccd::point_on_edge<T>(v0, v1, v2);
         return (v0-pt).norm();
     }
     else
@@ -736,13 +739,13 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
         Vec3 v3 = v[3].template head<3>();
         if (is_vf)
         {
-            Vec3 pt = mcl::ccd_internal::point_on_triangle<T>(v0, v1, v2, v3);
+            Vec3 pt = mcl::ccd::point_on_triangle<T>(v0, v1, v2, v3);
             return (v0-pt).norm();
         }
         else
         {
             Eigen::Matrix<T,4,1> b = Eigen::Matrix<T,4,1>::Zero();
-            Vec3 eed = mcl::ccd_internal::edge_to_edge(v0, v1, v2, v3, b);
+            Vec3 eed = mcl::ccd::edge_to_edge(v0, v1, v2, v3, b);
             return eed.norm();
         }
     }
@@ -754,20 +757,21 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
 // ---------------------------------------------------------
 
 
-template class mcl::NarrowPhase<double,2>;
-template class mcl::NarrowPhase<float,2>;
-template class mcl::NarrowPhase<double,3>;
-template class mcl::NarrowPhase<float,3>;
+template class mcl::ccd::NarrowPhase<double,2>;
+template class mcl::ccd::NarrowPhase<float,2>;
+template class mcl::ccd::NarrowPhase<double,3>;
+template class mcl::ccd::NarrowPhase<float,3>;
 
-template class mcl::NarrowPhaseCTCD<double,2>;
-template class mcl::NarrowPhaseCTCD<float,2>;
-template class mcl::NarrowPhaseCTCD<double,3>;
-template class mcl::NarrowPhaseCTCD<float,3>;
+template class mcl::ccd::NarrowPhaseCTCD<double,2>;
+template class mcl::ccd::NarrowPhaseCTCD<float,2>;
+template class mcl::ccd::NarrowPhaseCTCD<double,3>;
+template class mcl::ccd::NarrowPhaseCTCD<float,3>;
 
-template class mcl::NarrowPhaseACCD<double,2>;
-template class mcl::NarrowPhaseACCD<float,2>;
-template class mcl::NarrowPhaseACCD<double,3>;
-template class mcl::NarrowPhaseACCD<float,3>;
+template class mcl::ccd::NarrowPhaseACCD<double,2>;
+template class mcl::ccd::NarrowPhaseACCD<float,2>;
+template class mcl::ccd::NarrowPhaseACCD<double,3>;
+template class mcl::ccd::NarrowPhaseACCD<float,3>;
 
-} // ns mcl
+} // end namespace ccd
+} // end namespace mcl
 

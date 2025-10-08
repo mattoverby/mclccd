@@ -1,12 +1,14 @@
 // Copyright Matt Overby 2021.
 // Distributed under the MIT License.
 
-#ifndef MCL_BVHLEAF_HPP
-#define MCL_BVHLEAF_HPP 1
+#ifndef MCL_CCD_BVHLEAF_HPP
+#define MCL_CCD_BVHLEAF_HPP 1
 
 #include <Eigen/Geometry>
 
 namespace mcl
+{
+namespace ccd
 {
 
 template<typename T, int DIM>
@@ -51,14 +53,15 @@ public:
     virtual ~BVHLeaf() {}
 };
 
-} // ns mcl
+} // end namespace ccd
+} // end namespace mcl
 
 // Used for Eigen's BVH module
 namespace Eigen
 {
     template<typename T, int DIM>
-    static inline typename mcl::BVHLeaf<T,DIM>::BoxType
-    bounding_box(const mcl::BVHLeaf<T,DIM> &n)
+    static inline typename mcl::ccd::BVHLeaf<T,DIM>::BoxType
+    bounding_box(const mcl::ccd::BVHLeaf<T,DIM> &n)
     {
         return n.box;
     }

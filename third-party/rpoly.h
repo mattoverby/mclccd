@@ -36,7 +36,10 @@
 
 #include "math.h"
 
-namespace mcl {
+namespace mcl
+{
+namespace ctcd
+{
 
 class RootFinder
 {
@@ -761,6 +764,7 @@ _10:
 	}
 };
 
-} // ns mcl
+} // end namespace ctcd
+} // end namespace mcl
 
 #endif
