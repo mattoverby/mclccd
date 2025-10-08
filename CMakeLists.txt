@@ -41,17 +41,16 @@ endif()
 
 # Create the library
 file(GLOB MCLBVH_INCLUDE
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.hpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.hpp)
 file(GLOB MCLBVH_SRC
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.cpp)
 add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)
 target_include_directories(${PROJECT_NAME} INTERFACE
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party>)
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
 
 # build viewer tests
