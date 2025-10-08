@@ -1,12 +1,14 @@
 // Copyright Matt Overby 2021.
 // Distributed under the MIT License.
 
-#ifndef MCL_NARROWPHASE_HPP
-#define MCL_NARROWPHASE_HPP 1
+#ifndef MCL_CCD_NARROWPHASE_HPP
+#define MCL_CCD_NARROWPHASE_HPP 1
 
 #include <Eigen/Core>
 
 namespace mcl
+{
+namespace ccd
 {
 
 template <typename T, int DIM>
@@ -100,6 +102,7 @@ public:
         bool is_vf);
 };
 
-} // ns mcl
+} // end namespace ccd
+} // end namespace mcl
 
 #endif

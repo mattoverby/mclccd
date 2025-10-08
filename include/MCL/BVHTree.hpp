@@ -1,8 +1,8 @@
 // Copyright Matt Overby 2021.
 // Distributed under the MIT License.
 
-#ifndef MCL_BVHTREE_HPP
-#define MCL_BVHTREE_HPP 1
+#ifndef MCL_CCD_BVHTREE_HPP
+#define MCL_CCD_BVHTREE_HPP 1
 
 #include "BVHLeaf.hpp"
 #include <atomic>
@@ -12,6 +12,8 @@ namespace Eigen // Forward declare BVH type, then include in cpp
 { template <typename T,int DIM, class Object> class KdBVH; }
 
 namespace mcl
+{
+namespace ccd
 {
 
 // Traversal struct for things like point-in-elem queries
@@ -185,6 +187,7 @@ inline void BVHTree<T,DIM>::traverse(
     traverse(V0cpy.data(), V1cpy.data(), Pcpy.data());
 }
 
-} // end ns mcl
+} // end namespace ccd
+} // end namespace mcl
 
 #endif

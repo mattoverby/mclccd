@@ -8,7 +8,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(FetchContent)
 
 option(MCLCCD_DEBUG "Compile in test mode" OFF)
-option(MCLCCD_BUILD_EXAMPLES "Compile examples" ON)
+option(MCLCCD_TESTING_ONLY "only compile unit tests" OFF)
 
 if (MCLCCD_DEBUG)
 	set(CMAKE_BUILD_TYPE Debug)
@@ -28,6 +28,7 @@ find_package(TBB REQUIRED)
 # Eigen, download if not found
 find_package(Eigen3)
 if(NOT EIGEN_FOUND)
+	option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
 	FetchContent_Declare(
 		Eigen3
 		QUIET
@@ -43,37 +44,39 @@ file(GLOB MCLBVH_INCLUDE
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.hpp)
 file(GLOB MCLBVH_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/*.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.h
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/include/MCL/ccd_internal/*.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.h
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.cpp)
 add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)
-target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(${PROJECT_NAME} INTERFACE
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party>)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
 
 # build examples
-if(MCLCCD_BUILD_EXAMPLES)
+if(NOT MCLCCD_TESTING_ONLY)
 
     # Libigl for rendering/interface
-    option(LIBIGL_WITH_OPENGL "Use OpenGL" ON)
-    option(LIBIGL_WITH_OPENGL_GLFW "Use GLFW" ON)
     include(libigl)
+	igl_include(glfw)
 
-    set(MCLCCD_DEP_LIBRARIES
-        igl::core
-        igl::opengl_glfw
-        mcl::ccd)
-
+	# Set define for loading objs
 	add_definitions(-DMCLCCD_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 	add_executable(dillo ${CMAKE_CURRENT_SOURCE_DIR}/examples/dillo.cpp)
 	add_executable(traverser ${CMAKE_CURRENT_SOURCE_DIR}/examples/traverser.cpp)
-	target_link_libraries(dillo ${MCLCCD_DEP_LIBRARIES})
-	target_link_libraries(traverser ${MCLCCD_DEP_LIBRARIES})
+	target_link_libraries(dillo igl::glfw mcl::ccd)
+	target_link_libraries(traverser igl::glfw mcl::ccd)
 
 endif()
 
+# unit testing
+enable_testing()
+add_executable(test_2D ${CMAKE_CURRENT_SOURCE_DIR}/test/test_2D.cpp)
+target_link_libraries(test_2D PUBLIC mcl::ccd)
+add_test(NAME Test2D COMMAND test_2D)
+
+# install
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 install(FILES ${MCLBVH_INCLUDE} DESTINATION include/MCL)

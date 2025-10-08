@@ -6,8 +6,10 @@
 
 // Source: Etienne Vouga
 // https://github.com/evouga/collisiondetection
+// changes: added mcl::ctcd namespace
 
-namespace mcl {
+namespace mcl
+{
 namespace ctcd
 {
 

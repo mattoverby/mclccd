@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <queue>
 
-#include "../BVHLeaf.hpp"
+#include "BVHLeaf.hpp"
 
 namespace Eigen { 
 
@@ -80,7 +80,7 @@ public:
   typedef std::vector<Object, aligned_allocator<Object> > ObjectList;
   typedef _Scalar Scalar;
   //typedef AlignedBox<Scalar, Dim> Volume;
-  typedef mcl::BoundingBox<Scalar, Dim> Volume;
+  typedef mcl::ccd::BoundingBox<Scalar, Dim> Volume;
   typedef std::vector<Volume, Eigen::aligned_allocator<Volume> > VolumeList;
   typedef int Index;
   typedef const int *VolumeIterator; //the iterators are just pointers into the tree's vectors

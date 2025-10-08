@@ -5,6 +5,8 @@
 
 namespace mcl
 {
+namespace ccd
+{
 
 template<typename T, int DIM>
 BoundingBox<T,DIM> BoundingBox<T,DIM>::merged(const BoundingBox& b) const
@@ -22,13 +24,14 @@ BoundingBox<T,DIM> BoundingBox<T,DIM>::merged(const BoundingBox& b) const
     return bb;
 }
 
-} // ns mcl
+} // end namespace ccd
+} // end namespace mcl
 
-template class mcl::BoundingBox<double,3>;
-template class mcl::BoundingBox<double,2>;
-template class mcl::BoundingBox<float,3>;
-template class mcl::BoundingBox<float,2>;
-template class mcl::BVHLeaf<double,3>;
-template class mcl::BVHLeaf<double,2>;
-template class mcl::BVHLeaf<float,3>;
-template class mcl::BVHLeaf<float,2>;
+template class mcl::ccd::BoundingBox<double,3>;
+template class mcl::ccd::BoundingBox<double,2>;
+template class mcl::ccd::BoundingBox<float,3>;
+template class mcl::ccd::BoundingBox<float,2>;
+template class mcl::ccd::BVHLeaf<double,3>;
+template class mcl::ccd::BVHLeaf<double,2>;
+template class mcl::ccd::BVHLeaf<float,3>;
+template class mcl::ccd::BVHLeaf<float,2>;

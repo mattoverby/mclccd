@@ -25,11 +25,11 @@ Eigen::Vector3d point_triangle_barys(
 	return r;
 }
 
-class PointInTriangle : public mcl::BVHTraverse<double,2>
+class PointInTriangle : public mcl::ccd::BVHTraverse<double,2>
 {
 public:
-    using mcl::BVHTraverse<double,2>::VolumeType;
-    using mcl::BVHTraverse<double,2>::ObjectType;
+    using mcl::ccd::BVHTraverse<double,2>::VolumeType;
+    using mcl::ccd::BVHTraverse<double,2>::ObjectType;
     Eigen::Vector2d pt;
     const Eigen::MatrixXd &V;
     const Eigen::MatrixXi &F;
@@ -56,7 +56,7 @@ public:
     }
 };
 
-// Load and render a dillo
+// Load and render a 2D mesh
 int main(int, char**)
 {
     using namespace Eigen;
@@ -86,7 +86,7 @@ int main(int, char**)
     pts.col(1).array() += box.min()[1];
 
     // Build the tree
-    mcl::BVHTree<double,2> tree;
+    mcl::ccd::BVHTree<double,2> tree;
     tree.update(TC, TC, FTC);
 
     // Traverse and color intersected faces

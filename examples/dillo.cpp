@@ -15,11 +15,11 @@
 #include <igl/Timer.h>
 
 // Collects AABB nodes for rendering
-class NodeCollector : public mcl::BVHTraverse<double,3>
+class NodeCollector : public mcl::ccd::BVHTraverse<double,3>
 {
 public:
-    using mcl::BVHTraverse<double,3>::VolumeType;
-    using mcl::BVHTraverse<double,3>::ObjectType;
+    using mcl::ccd::BVHTraverse<double,3>::VolumeType;
+    using mcl::ccd::BVHTraverse<double,3>::ObjectType;
     std::vector<Eigen::Vector3d> edges0, edges1;
     bool intersectVolume(const VolumeType &volume);
     bool intersectObject(const ObjectType&) { return false; }
@@ -53,7 +53,7 @@ int main(int, char**)
     // Initialize the tree
     std::cout << "Building the tree: " << std::flush; 
     timer.start();
-    mcl::BVHTree<double,3> tree;
+    mcl::ccd::BVHTree<double,3> tree;
     tree.options.box_eta = std::numeric_limits<float>::epsilon();
     tree.update(V, V, F);
     std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;

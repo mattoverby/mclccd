@@ -2,16 +2,16 @@
 // Distributed under the MIT License.
 
 // Copied from https://github.com/mattoverby/mclgeom, March 2022.
-// Added ccd_internal.
+// Added namespace ccd.
 
-#ifndef MCL_PROJECTION_CCD_INTERNAL_HPP
-#define MCL_PROJECTION_CCD_INTERNAL_HPP 1
+#ifndef MCL_CCD_PROJECTION_HPP
+#define MCL_CCD_PROJECTION_HPP 1
 
 #include <Eigen/Core>
 
 namespace mcl
 {
-namespace ccd_internal
+namespace ccd
 {
 
 // Projection on Triangle
@@ -301,7 +301,7 @@ static Eigen::Matrix<T,3,1> edge_to_edge(
 	return c2-c1;
 }
 
-} // end namespace ccd_internal
+} // end namespace ccd
 } // end namespace mcl
 
 #endif
