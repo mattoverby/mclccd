@@ -24,19 +24,8 @@ endif()
 # thread building blocks
 find_package(TBB REQUIRED)
 
-# Eigen, download if not found
-find_package(Eigen3)
-if(NOT EIGEN_FOUND)
-	option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
-	FetchContent_Declare(
-		Eigen3
-		QUIET
-		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-		GIT_TAG 3.4.0
-		GIT_SHALLOW TRUE
-	)
-	FetchContent_MakeAvailable(Eigen3)
-endif()
+# Eigen linalg
+find_package(Eigen3 REQUIRED)
 
 # Create the library
 file(GLOB MCLBVH_INCLUDE
