@@ -22,18 +22,7 @@ else()
 endif()
 
 # thread building blocks
-find_package(TBB)
-if(NOT TBB_FOUND)
-	option(TBB_TEST "Enable testing" OFF)
-	FetchContent_Declare(
-		TBB
-		QUIET
-		GIT_REPOSITORY https://github.com/uxlfoundation/oneTBB.git
-		GIT_TAG v2022.2.0
-		GIT_SHALLOW TRUE
-	)
-	FetchContent_MakeAvailable(TBB)
-endif()
+find_package(TBB REQUIRED)
 
 # Eigen, download if not found
 find_package(Eigen3)
