@@ -56,7 +56,7 @@ public:
     }
 };
 
-// Load and render a dillo
+// Load and render a 2D mesh
 int main(int, char**)
 {
     using namespace Eigen;
