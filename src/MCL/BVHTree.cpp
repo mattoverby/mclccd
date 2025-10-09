@@ -19,14 +19,14 @@ namespace mcl
 namespace ccd
 {
 
-template <typename T, int DIM>
-BVHTree<T,DIM>::BVHTree()
+template <typename T, int DIM, int PDIM>
+BVHTree<T,DIM,PDIM>::BVHTree()
 {
     tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType> >();
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int pdim, const int *active)
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np, const int *active)
 {
     if (np == 0)
     {
@@ -48,7 +48,7 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
     if ((int)leaves.size() != np)
     {
         leaves.resize(np);
-        update_reptri = pdim == 2 || pdim == 3;
+        update_reptri = PDIM == 2 || PDIM == 3;
     }
 
     // Update representative triangles
@@ -62,18 +62,18 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
             BVHLeaf<T,DIM> &leaf = leaves[i];
             leaf.v.setZero();
             leaf.e.setZero();
-            for (int j=0; j<pdim; ++j)
+            for (int j=0; j<PDIM; ++j)
             {
-                int vi = P[i*pdim+j];
+                int vi = P[i*PDIM+j];
                 bool v_not_seen = seen_verts.emplace(vi).second;
                 if (v_not_seen)
                     leaf.v[j]=1;
 
-                if (pdim != 3)
+                if (PDIM != 3)
                     continue;
 
                 int e0 = vi;
-                int e1 = P[i*pdim+((j+1)%3)];
+                int e1 = P[i*PDIM+((j+1)%3)];
                 if (e1 < e0) { std::swap(e0, e1); }
                 std::string h = std::to_string(e0)+' '+std::to_string(e1);
                 bool e_not_seen = seen_edges.emplace(h).second;
@@ -96,9 +96,9 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
         leaf.box.setEmpty();
         leaf.box.t0.setEmpty();
         leaf.box.t1.setEmpty();
-        for (int j=0; j<pdim; ++j)
+        for (int j=0; j<PDIM; ++j)
         {
-            int vi = P[i*pdim + j];
+            int vi = P[i*PDIM + j];
             VecType xi_t0 = VecType::Zero();
             VecType xi_t1 = VecType::Zero();
             for (int k=0; k<DIM; ++k)
@@ -129,8 +129,8 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
 
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::traverse(const T* V0, const T* V1, const int *P) const
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::traverse(const T* V0, const T* V1, const int *P) const
 {
     if (leaves.size() <= 1)
         return;
@@ -143,7 +143,7 @@ void BVHTree<T,DIM>::traverse(const T* V0, const T* V1, const int *P) const
     std::atomic<int> stop(0);
 
     int nq = queue.size();
-    if (options.threaded)
+    if (options.parallel)
     {
         tbb::parallel_for(tbb::blocked_range<int>(0,nq), [&](const tbb::blocked_range<int>& r)
         {
@@ -162,15 +162,15 @@ void BVHTree<T,DIM>::traverse(const T* V0, const T* V1, const int *P) const
     }
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::traverse(BVHTraverse<T,DIM> *traverser) const
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::traverse(BVHTraverse<T,DIM> *traverser) const
 {
     const Eigen::KdBVH<T,DIM,LeafType> &tree_ref = *tree.get();
     Eigen::BVIntersect(tree_ref, *traverser);
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::make_frontlist(const NodeIndex &idx,
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::make_frontlist(const NodeIndex &idx,
     std::vector<std::pair<NodeIndex,NodeIndex> > &queue) const
 {
     if (idx.second) // is leaf node
@@ -188,8 +188,8 @@ void BVHTree<T,DIM>::make_frontlist(const NodeIndex &idx,
     queue.emplace_back(l, r);
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex &r) const
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex &r) const
 {
     typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM> >::VolumeIterator VolumeIter;
     typedef typename Eigen::KdBVH<T, DIM, BVHLeaf<T,DIM> >::ObjectIterator ObjectIter;
@@ -223,15 +223,15 @@ void BVHTree<T,DIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeIndex 
     assert(num_children == 2); // assumes binary tree
 }
 
-template <typename T, int DIM>
-const typename BVHLeaf<T,DIM>::BoxType& BVHTree<T,DIM>::get_box(const NodeIndex &idx) const
+template <typename T, int DIM, int PDIM>
+const typename BVHLeaf<T,DIM>::BoxType& BVHTree<T,DIM,PDIM>::get_box(const NodeIndex &idx) const
 {
     if (idx.second) { return leaves[idx.first].box; }
     return tree->getVolume(idx.first);
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::collide(
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::collide(
     const T* V0, const T* V1, const int *P,
     const NodeIndex &left, const NodeIndex &right,
     std::atomic<int> &stop) const
@@ -257,7 +257,7 @@ void BVHTree<T,DIM>::collide(
         {
             std::array<PairType, NumCandidates> pairs;
             get_candidates(left.first, right.first, P, pairs);
-            for (int i=0; i<NumCandidates; ++i)
+            for (size_t i=0; i<NumCandidates; ++i)
             {
                 if (pairs[i].second < 0) {
                     continue;
@@ -308,29 +308,29 @@ void BVHTree<T,DIM>::collide(
     }
 }
 
-template <typename T, int DIM>
-void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
+template <typename T, int DIM, int PDIM>
+void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
     std::array<PairType, NumCandidates> &pairs) const
 {
     const LeafType& l0 = leaves[p0];
     const LeafType& l1 = leaves[p1];
 
-    for (int i=0; i<NumCandidates; ++i)
+    for (size_t i=0; i<NumCandidates; ++i)
     {
         pairs[i].first.setZero();
         pairs[i].second = -1;
     }
 
-    int f0[DIM], f1[DIM];
-    for (int i=0; i<DIM; ++i)
+    int f0[PDIM], f1[PDIM];
+    for (int i=0; i<PDIM; ++i)
     {
-        f0[i] = P[p0*DIM+i];
-        f1[i] = P[p1*DIM+i];
+        f0[i] = P[p0*PDIM+i];
+        f1[i] = P[p1*PDIM+i];
     }
 
     auto vf_shared_vertex = [](int vi, const int *fi)->bool
     {
-        for (int i=0; i<DIM; ++i)
+        for (int i=0; i<PDIM; ++i)
             if (vi == fi[i])
                 return true;
 
@@ -340,7 +340,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
     int pair_index = 0;
 
     // VF, f0 -> f1
-    for (int i=0; i<DIM; ++i)
+    for (int i=0; i<PDIM; ++i)
     {
         if (!l0.v[i]) // v not represented
         {
@@ -359,7 +359,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f0[i];
-        for (int j=0; j<DIM; ++j)
+        for (int j=0; j<PDIM; ++j)
             pair.first[j+1] = f1[j];
 
         if (filter_pair != nullptr)
@@ -368,7 +368,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
     }
 
     // VF, f1 -> f0
-    for (int i=0; i<DIM; ++i)
+    for (int i=0; i<PDIM; ++i)
     {
         if (!l1.v[i]) // v not represented
         {
@@ -387,7 +387,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f1[i];
-        for (int j=0; j<DIM; ++j)
+        for (int j=0; j<PDIM; ++j)
             pair.first[j+1] = f0[j];
 
         if (filter_pair != nullptr)
@@ -395,7 +395,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
                 pair.second = -1;
     }
 
-    if (DIM != 3)
+    if (PDIM != 3)
         return;
 
     // EE
@@ -431,8 +431,8 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
     }
 }
 
-template <typename T, int DIM>
-bool BVHTree<T,DIM>::boxes_intersect(const NodeIndex &left, const NodeIndex &right) const
+template <typename T, int DIM, int PDIM>
+bool BVHTree<T,DIM,PDIM>::boxes_intersect(const NodeIndex &left, const NodeIndex &right) const
 {
     const typename BVHLeaf<T,DIM>::BoxType &lbox = get_box(left);
     const typename BVHLeaf<T,DIM>::BoxType &rbox = get_box(right);
@@ -459,11 +459,11 @@ bool BVHTree<T,DIM>::boxes_intersect(const NodeIndex &left, const NodeIndex &rig
     return true;
 }
 
-template <typename T, int DIM>
-T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i &sten, bool is_vf) const
+template <typename T, int DIM, int PDIM>
+T BVHTree<T,DIM,PDIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i &sten, bool is_vf) const
 {
-    VecType verts0[DIM+1], verts1[DIM+1];
-    for (int i=0; i<DIM+1; ++i)
+    VecType verts0[4], verts1[4];
+    for (int i=0; i<4; ++i)
     {
         assert(sten[i] >= 0);
         for (int j=0; j<DIM; ++j)
@@ -490,8 +490,8 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
     return -1;
 }
 
-template <typename T, int DIM>
-bool BVHTree<T,DIM>::default_discrete_test(const T* V, const int *p0, const int *p1) const
+template <typename T, int DIM, int PDIM>
+bool BVHTree<T,DIM,PDIM>::default_discrete_test(const T* V, const int *p0, const int *p1) const
 {
     // Shares vertex?
     for (int i=0; i<DIM; ++i)
@@ -532,7 +532,7 @@ bool BVHTree<T,DIM>::default_discrete_test(const T* V, const int *p0, const int 
 } // end namespace ccd
 } // end namespace mcl
 
-template class mcl::ccd::BVHTree<double,3>;
-template class mcl::ccd::BVHTree<double,2>;
-template class mcl::ccd::BVHTree<float,3>;
-template class mcl::ccd::BVHTree<float,2>;
+template class mcl::ccd::BVHTree<double,3,3>;
+template class mcl::ccd::BVHTree<double,2,3>;
+template class mcl::ccd::BVHTree<float,3,3>;
+template class mcl::ccd::BVHTree<float,2,3>;
