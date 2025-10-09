@@ -19,6 +19,32 @@ namespace mcl
 namespace ccd
 {
 
+template <int PDIM>
+void get_primitive(int prim_index, const int *P, int prim[PDIM])
+{
+    prim[0] = P[prim_index*PDIM + 0];
+    if constexpr (PDIM > 1) {
+        prim[1] = P[prim_index*PDIM + 1];
+    }
+    if constexpr (PDIM > 2) {
+        prim[2] = P[prim_index*PDIM + 2];
+    }
+    if constexpr (PDIM > 3) {
+        prim[3] = P[prim_index*PDIM + 3];
+    }
+}
+
+template <typename T, typename DerivedV>
+void get_vertex(int vert_index, const T* V, Eigen::MatrixBase<DerivedV> &vert)
+{
+    constexpr int DIM = Eigen::MatrixBase<DerivedV>::SizeAtCompileTime;
+    vert[0] = V[vert_index*DIM + 0];
+    vert[1] = V[vert_index*DIM + 1];
+    if constexpr (DIM > 2) {
+        vert[2] = V[vert_index*DIM + 2];
+    }
+}
+
 template <typename T, int DIM, int PDIM>
 BVHTree<T,DIM,PDIM>::BVHTree()
 {
@@ -67,10 +93,14 @@ void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np,
                 int vi = P[i*PDIM+j];
                 bool v_not_seen = seen_verts.emplace(vi).second;
                 if (v_not_seen)
+                {
                     leaf.v[j]=1;
+                }
 
                 if (PDIM != 3)
+                {
                     continue;
+                }
 
                 int e0 = vi;
                 int e1 = P[i*PDIM+((j+1)%3)];
@@ -78,7 +108,9 @@ void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np,
                 std::string h = std::to_string(e0)+' '+std::to_string(e1);
                 bool e_not_seen = seen_edges.emplace(h).second;
                 if (e_not_seen)
+                {
                     leaf.e[j]=1;
+                }
             }
         }
     }
@@ -101,11 +133,8 @@ void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np,
             int vi = P[i*PDIM + j];
             VecType xi_t0 = VecType::Zero();
             VecType xi_t1 = VecType::Zero();
-            for (int k=0; k<DIM; ++k)
-            {
-                xi_t0[k] = V0[vi*DIM+k];
-                xi_t1[k] = V1[vi*DIM+k];
-            }
+            get_vertex(vi, V0, xi_t0);
+            get_vertex(vi, V1, xi_t1);
             leaf.box.t0.extend(xi_t0);
             leaf.box.t1.extend(xi_t1);
             leaf.box.extend(xi_t0);
@@ -277,11 +306,8 @@ void BVHTree<T,DIM,PDIM>::collide(
         if (options.discrete)
         {
             int p0[PDIM], p1[PDIM];
-            for (int i=0; i<PDIM; ++i)
-            {
-                p0[i] = P[left.first*PDIM+i];
-                p1[i] = P[right.first*PDIM+i];
-            }
+            get_primitive<PDIM>(left.first, P, p0);
+            get_primitive<PDIM>(right.first, P, p1);
             bool d_hit = default_discrete_test(V1, p0, p1);
             if (d_hit && append_discrete != nullptr)
             {
@@ -323,11 +349,8 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
     }
 
     int f0[PDIM], f1[PDIM];
-    for (int i=0; i<PDIM; ++i)
-    {
-        f0[i] = P[p0*PDIM+i];
-        f1[i] = P[p1*PDIM+i];
-    }
+    get_primitive<PDIM>(p0, P, f0);
+    get_primitive<PDIM>(p1, P, f1);
 
     auto vf_shared_vertex = [](int vi, const int *fi)->bool
     {
@@ -398,7 +421,9 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
 
     // Skip edge-edge if not in 3D
     if (DIM != 3)
+    {
         return;
+    }
 
     // EE
     for (int i=0; i<3; ++i)
@@ -440,16 +465,22 @@ bool BVHTree<T,DIM,PDIM>::boxes_intersect(const NodeIndex &left, const NodeIndex
     const typename BVHLeaf<T,DIM>::BoxType &rbox = get_box(right);
 
     // Check if both branches inactive
-    if (!lbox.active && !rbox.active)
+    if (!lbox.active && !rbox.active) {
         return false;
+    }
 
     // Check nodes intersect
-    if (!lbox.intersects(rbox))
+    if (!lbox.intersects(rbox)) {
         return false;
+    }
 
     // Check time varying boxes if not empty
-    if (lbox.t0.isEmpty() || rbox.t0.isEmpty()) { return true; }
-    if (lbox.t1.isEmpty() || rbox.t1.isEmpty()) { return true; }
+    if (lbox.t0.isEmpty() || rbox.t0.isEmpty()) {
+        return true;
+    }
+    if (lbox.t1.isEmpty() || rbox.t1.isEmpty()) {
+        return true;
+    }
 
     for (int i=0; i<DIM; ++i)
     {
@@ -468,31 +499,25 @@ T BVHTree<T,DIM,PDIM>::default_narrow_phase(const T* V0, const T* V1, const Eige
     VecType verts0[PDIM+1], verts1[PDIM+1];
     for (int i=0; i<PDIM+1; ++i)
     {
-        if (sten[i] < 0)
-        {
+        if (sten[i] < 0) {
             return -2; // error
         }
-
-        for (int j=0; j<DIM; ++j)
-        {
-            verts0[i][j] = V0[sten[i]*DIM+j];
-            verts1[i][j] = V1[sten[i]*DIM+j];
-        }
+        get_vertex(sten[i], V0, verts0[i]);
+        get_vertex(sten[i], V1, verts1[i]);
     }
 
     T toi = -1;
     int hit = 0;
-    if (is_vf)
-    {
+    if (is_vf) {
         hit = NarrowPhaseACCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, toi);
     }
-    else
-    {
+    else {
         hit = NarrowPhaseACCD<T,DIM>::query_ccd_ee(verts0, verts1, options.ee_ccd_eta, toi);
     }
 
-    if (hit == 1)
+    if (hit == 1) {
         return toi;
+    }
 
     return -1;
 }
@@ -506,51 +531,39 @@ bool BVHTree<T,DIM,PDIM>::default_discrete_test(const T* V, const int *p0, const
             if (p0[i] == p1[j])
                 return false;
 
-    if (DIM == 3 && PDIM == 3)
+    if constexpr (DIM == 3 && PDIM == 3)
     {
         Eigen::Vector3<T> v0[3], v1[3];
-        for (int i=0; i<3; ++i)
-        {
-            for (int j=0; j<3; ++j)
-            {
-                v0[i][j] = V[p0[i]*3+j];
-                v1[i][j] = V[p1[i]*3+j];
-            }
-        }
+        get_vertex(p0[0], V, v0[0]);
+        get_vertex(p0[1], V, v0[1]);
+        get_vertex(p0[2], V, v0[2]);
+        get_vertex(p1[0], V, v1[0]);
+        get_vertex(p1[1], V, v1[1]);
+        get_vertex(p1[2], V, v1[2]);
         return NarrowPhase<T,3>::discrete_tri_tri(v0, v1);
     }
-    else if (DIM == 2 && PDIM == 2)
+    else if constexpr (DIM == 2 && PDIM == 2)
     {
         Eigen::Vector2<T> v0[2], v1[2];
-        for (int i=0; i<2; ++i)
-        {
-            for (int j=0; j<2; ++j)
-            {
-                v0[i][j] = V[p0[i]*2+j];
-                v1[i][j] = V[p1[i]*2+j];
-            }
-        }
+        get_vertex(p0[0], V, v0[0]);
+        get_vertex(p0[1], V, v0[1]);
+        get_vertex(p1[0], V, v1[0]);
+        get_vertex(p1[1], V, v1[1]);
         return NarrowPhase<T,2>::discrete_edge_edge(v0, v1); 
     }
     else if (DIM == 2 && PDIM == 3)
     {
-        // two triangles = 6 edge-edge tests
+        // 2D two triangles = 6 edge-edge tests
         for (int p0_i=0; p0_i<3; ++p0_i)
         {
             Eigen::Vector2<T> v0[2];
-            v0[0][0] = V[p0[p0_i]*2+0];
-            v0[0][1] = V[p0[p0_i]*2+1];
-            v0[1][0] = V[p0[(p0_i+1)%3]*2+0];
-            v0[1][1] = V[p0[(p0_i+1)%3]*2+1];
-
+            get_vertex(p0[0], V, v0[0]);
+            get_vertex(p0[1], V, v0[1]);
             for (int p1_i=0; p1_i<3; ++p1_i)
             {
                 Eigen::Vector2<T> v1[2];
-                v1[0][0] = V[p1[p1_i]*2+0];
-                v1[0][1] = V[p1[p1_i]*2+1];
-                v1[1][0] = V[p1[(p1_i+1)%3]*2+0];
-                v1[1][1] = V[p1[(p1_i+1)%3]*2+1];
-
+                get_vertex(p1[0], V, v1[0]);
+                get_vertex(p1[1], V, v1[1]);
                 if (NarrowPhase<T,2>::discrete_edge_edge(v0, v1)) {
                     return true;
                 }
