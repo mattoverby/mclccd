@@ -255,12 +255,15 @@ void BVHTree<T,DIM>::collide(
     {
         if (options.continuous)
         {
-            std::vector<PairType> pairs;
+            std::array<PairType, NumCandidates> pairs;
             get_candidates(left.first, right.first, P, pairs);
-            int num_pairs = pairs.size();
-            for (int i=0; i<num_pairs; ++i)
+            for (int i=0; i<NumCandidates; ++i)
             {
-                T toi = -1;//narrow_phase(nf);
+                if (pairs[i].second < 0) {
+                    continue;
+                }
+
+                T toi = -1;
                 if (narrow_phase != nullptr) { toi = narrow_phase(pairs[i].first, pairs[i].second); }
                 else { toi = default_narrow_phase(V0, V1, pairs[i].first, pairs[i].second); }
                 if (toi >= 0 && append_pair != nullptr)
@@ -307,10 +310,16 @@ void BVHTree<T,DIM>::collide(
 
 template <typename T, int DIM>
 void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
-    std::vector<PairType> &pairs) const
+    std::array<PairType, NumCandidates> &pairs) const
 {
     const LeafType& l0 = leaves[p0];
     const LeafType& l1 = leaves[p1];
+
+    for (int i=0; i<NumCandidates; ++i)
+    {
+        pairs[i].first.setZero();
+        pairs[i].second = -1;
+    }
 
     int f0[DIM], f1[DIM];
     for (int i=0; i<DIM; ++i)
@@ -328,18 +337,25 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
         return false;
     };
 
+    int pair_index = 0;
+
     // VF, f0 -> f1
     for (int i=0; i<DIM; ++i)
     {
         if (!l0.v[i]) // v not represented
+        {
+            pairs[pair_index++].second = -1;
             continue;
+        }
 
         if (vf_shared_vertex(f0[i], f1))
+        {
+            pairs[pair_index++].second = -1;
             continue;
-
-        pairs.emplace_back();
-        PairType &pair = pairs.back();
-        pair.second = true; // is_vf
+        }
+    
+        PairType &pair = pairs[pair_index++];
+        pair.second = 1; // is_vf
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f0[i];
@@ -348,21 +364,26 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         if (filter_pair != nullptr)
             if (filter_pair(pair.first, pair.second))
-                pairs.pop_back();
+                pair.second = -1;
     }
 
     // VF, f1 -> f0
     for (int i=0; i<DIM; ++i)
     {
         if (!l1.v[i]) // v not represented
+        {
+            pairs[pair_index++].second = -1;
             continue;
+        }
 
         if (vf_shared_vertex(f1[i], f0))
+        {
+            pairs[pair_index++].second = -1;
             continue;
+        }
 
-        pairs.emplace_back();
-        PairType &pair = pairs.back();
-        pair.second = true; // is_vf
+        PairType &pair = pairs[pair_index++];
+        pair.second = 1; // is_vf
 
         pair.first = Eigen::Vector4i(-1,-1,-1,-1);
         pair.first[0] = f1[i];
@@ -371,7 +392,7 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
 
         if (filter_pair != nullptr)
             if (filter_pair(pair.first, pair.second))
-                pairs.pop_back();
+                pair.second = -1;
     }
 
     if (DIM != 3)
@@ -383,20 +404,29 @@ void BVHTree<T,DIM>::get_candidates(int p0, int p1, const int *P,
         if (!l0.e[i]) { continue; }
         for (int j=0; j<3; ++j)
         {
-            if (!l1.e[j]) { continue; }
+            if (!l1.e[j])
+            {
+                pairs[pair_index++].second = -1;
+                continue;
+            }
+
             Eigen::Vector4i sten(i, (i+1)%3, j, (j+1)%3);
+
+            // shares vertex?
             if (f0[sten[0]]==f1[sten[2]] || f0[sten[0]]==f1[sten[3]] ||
                 f0[sten[1]]==f1[sten[2]] || f0[sten[1]]==f1[sten[3]])
-                continue; // shares vertex
+            {
+                pairs[pair_index++].second = -1;
+                continue;
+            }
 
-            pairs.emplace_back();
-            PairType &pair = pairs.back();
-            pair.second = false; // is not vf
+            PairType &pair = pairs[pair_index++];
+            pair.second = 0; // is not vf
             pair.first = Eigen::Vector4i(f0[sten[0]], f0[sten[1]], f1[sten[2]], f1[sten[3]]);
 
             if (filter_pair != nullptr)
                 if (filter_pair(pair.first, pair.second))
-                    pairs.pop_back();
+                    pair.second = -1;
         }
     }
 }

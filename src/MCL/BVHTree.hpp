@@ -35,9 +35,9 @@ class BVHTree
 public:
     typedef BVHLeaf<T,DIM> LeafType;
     typedef Eigen::Matrix<T,DIM,1> VecType;
-    typedef std::pair<Eigen::Vector4i,bool> PairType; // [sten, is_vf]
+    typedef std::pair<Eigen::Vector4i,int> PairType; // [sten, -1=invalid, 0=ee, 1=vf]
     typedef std::pair<int, bool> NodeIndex; // [index, isleaf]
-    //constexpr int NumCandidates = DIM == 2 ? 
+    static const size_t NumCandidates = DIM == 2 ? 6 : 15; // narrowphase candidates
 
     std::vector<LeafType> leaves;
     std::shared_ptr<Eigen::KdBVH<T,DIM,LeafType> > tree;
@@ -131,7 +131,7 @@ protected:
     // Creates list of broadphase pairs from rep-tris and no shared vertex
     // pairs = stencil, type
     void get_candidates(int p0, int p1, const int *P,
-        std::vector<PairType> &pairs) const;
+        std::array<PairType, NumCandidates> &pairs) const;
 
     bool boxes_intersect(const NodeIndex &left, const NodeIndex &right) const;
 
