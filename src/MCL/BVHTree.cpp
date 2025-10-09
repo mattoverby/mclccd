@@ -247,8 +247,9 @@ void BVHTree<T,DIM,PDIM>::collide(
     assert((left.second == right.second) ? (left.first != right.first) : true);
 
     // Check if nodes intersect or inactive
-    if (!boxes_intersect(left,right))
+    if (!boxes_intersect(left,right)) {
         return;
+    }
 
     // Both are leaf nodes
     if (left.second && right.second)
@@ -275,11 +276,11 @@ void BVHTree<T,DIM,PDIM>::collide(
 
         if (options.discrete)
         {
-            int p0[DIM], p1[DIM];
-            for (int i=0; i<DIM; ++i)
+            int p0[PDIM], p1[PDIM];
+            for (int i=0; i<PDIM; ++i)
             {
-                p0[i] = P[left.first*DIM+i];
-                p1[i] = P[right.first*DIM+i];
+                p0[i] = P[left.first*PDIM+i];
+                p1[i] = P[right.first*PDIM+i];
             }
             bool d_hit = default_discrete_test(V1, p0, p1);
             if (d_hit && append_discrete != nullptr)
@@ -395,7 +396,8 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
                 pair.second = -1;
     }
 
-    if (PDIM != 3)
+    // Skip edge-edge if not in 3D
+    if (DIM != 3)
         return;
 
     // EE
@@ -462,10 +464,15 @@ bool BVHTree<T,DIM,PDIM>::boxes_intersect(const NodeIndex &left, const NodeIndex
 template <typename T, int DIM, int PDIM>
 T BVHTree<T,DIM,PDIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i &sten, bool is_vf) const
 {
-    VecType verts0[4], verts1[4];
-    for (int i=0; i<4; ++i)
+    // stencil is PDIM + 1, i.e., edges = vertex-edge, triangles = vertex-triangle or edge-edge
+    VecType verts0[PDIM+1], verts1[PDIM+1];
+    for (int i=0; i<PDIM+1; ++i)
     {
-        assert(sten[i] >= 0);
+        if (sten[i] < 0)
+        {
+            return -2; // error
+        }
+
         for (int j=0; j<DIM; ++j)
         {
             verts0[i][j] = V0[sten[i]*DIM+j];
@@ -494,36 +501,62 @@ template <typename T, int DIM, int PDIM>
 bool BVHTree<T,DIM,PDIM>::default_discrete_test(const T* V, const int *p0, const int *p1) const
 {
     // Shares vertex?
-    for (int i=0; i<DIM; ++i)
-        for (int j=0; j<DIM; ++j)
+    for (int i=0; i<PDIM; ++i)
+        for (int j=0; j<PDIM; ++j)
             if (p0[i] == p1[j])
                 return false;
 
-    if (DIM == 3)
+    if (DIM == 3 && PDIM == 3)
     {
-        Eigen::Matrix<T,3,1> v0[DIM], v1[DIM];
+        Eigen::Vector3<T> v0[3], v1[3];
         for (int i=0; i<3; ++i)
         {
             for (int j=0; j<3; ++j)
             {
-                v0[i][j] = V[p0[i]*DIM+j];
-                v1[i][j] = V[p1[i]*DIM+j];
+                v0[i][j] = V[p0[i]*3+j];
+                v1[i][j] = V[p1[i]*3+j];
             }
         }
         return NarrowPhase<T,3>::discrete_tri_tri(v0, v1);
     }
-    else if (DIM == 2)
+    else if (DIM == 2 && PDIM == 2)
     {
-        Eigen::Matrix<T,2,1> v0[DIM], v1[DIM];
+        Eigen::Vector2<T> v0[2], v1[2];
         for (int i=0; i<2; ++i)
         {
             for (int j=0; j<2; ++j)
             {
-                v0[i][j] = V[p0[i]*DIM+j];
-                v1[i][j] = V[p1[i]*DIM+j];
+                v0[i][j] = V[p0[i]*2+j];
+                v1[i][j] = V[p1[i]*2+j];
             }
         }
         return NarrowPhase<T,2>::discrete_edge_edge(v0, v1); 
+    }
+    else if (DIM == 2 && PDIM == 3)
+    {
+        // two triangles = 6 edge-edge tests
+        for (int p0_i=0; p0_i<3; ++p0_i)
+        {
+            Eigen::Vector2<T> v0[2];
+            v0[0][0] = V[p0[p0_i]*2+0];
+            v0[0][1] = V[p0[p0_i]*2+1];
+            v0[1][0] = V[p0[(p0_i+1)%3]*2+0];
+            v0[1][1] = V[p0[(p0_i+1)%3]*2+1];
+
+            for (int p1_i=0; p1_i<3; ++p1_i)
+            {
+                Eigen::Vector2<T> v1[2];
+                v1[0][0] = V[p1[p1_i]*2+0];
+                v1[0][1] = V[p1[p1_i]*2+1];
+                v1[1][0] = V[p1[(p1_i+1)%3]*2+0];
+                v1[1][1] = V[p1[(p1_i+1)%3]*2+1];
+
+                if (NarrowPhase<T,2>::discrete_edge_edge(v0, v1)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     return false;

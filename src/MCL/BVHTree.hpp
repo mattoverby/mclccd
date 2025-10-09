@@ -51,7 +51,7 @@ public:
         T ee_ccd_eta; // gap for ee narrowphase
         bool parallel; // cpu-threaded traverse(...)
         bool discrete; // discrete check ff/ee at V1
-        bool continuous; // ccd check from V0 to V1 (triangles only)
+        bool continuous; // ccd check from V0 to V1 (3D triangles only)
         Options() :
             vf_ccd_eta(1e-6),
             ee_ccd_eta(1e-6),

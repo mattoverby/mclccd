@@ -38,9 +38,10 @@ int main(int, char**)
             pairs.emplace_back((p0 > p1) ? Eigen::Vector2i(p0, p1) : Eigen::Vector2i(p1, p0));
             return false;
         };
+        tree.traverse(V, V, F);
 
         assert_true(pairs.size() == 1, "didn't detect single intersection");
-        assert_true(pairs[0][0] == 0 && pairs[0][1] == 1, "bad intersection prim idx");
+        assert_true(pairs[0][0] == 1 && pairs[0][1] == 0, "bad intersection prim idx");
     }
 
 

@@ -68,7 +68,7 @@ bool NarrowPhase<double,3>::hit_wrong_side_vf(
 	// Resting contact, relative velocity=0
 	// and so there is no way to tell.
 	if (std::abs(t) <= 0.0) { return false; }
-	std::vector<Vector3d> xt = {
+	std::array<Vector3d, 4> xt = {
 		verts0[0]*(1.0-t) + verts1[0]*t,
 		verts0[1]*(1.0-t) + verts1[1]*t,
 		verts0[2]*(1.0-t) + verts1[2]*t,
@@ -142,11 +142,11 @@ bool NarrowPhase<double,3>::query_ray_box(
 	dir.normalize();
 	typedef Matrix<double,1,3>  RowVector3S;
 	const RowVector3S inv_dir( 1./dir(0),1./dir(1),1./dir(2));
-	const std::vector<bool> sign = { inv_dir(0)<0, inv_dir(1)<0, inv_dir(2)<0};
+	const std::array<bool, 3> sign = { inv_dir(0)<0, inv_dir(1)<0, inv_dir(2)<0};
 	// http://people.csail.mit.edu/amy/papers/box-jgt.pdf
 	// "An Efficient and Robust Ray–Box Intersection Algorithm"
 	double tymin, tymax, tzmin, tzmax;
-	std::vector<RowVector3S> bounds = {bmin, bmax};
+	std::array<RowVector3S, 2> bounds = {bmin, bmax};
 	double tmin = ( bounds[sign[0]](0) - origin(0)) * inv_dir(0);
 	double tmax = ( bounds[1-sign[0]](0) - origin(0)) * inv_dir(0);
 	tymin = (bounds[sign[1]](1)   - origin(1)) * inv_dir(1);
