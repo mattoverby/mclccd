@@ -549,7 +549,7 @@ int NarrowPhaseCTCD<double,3>::query_ccd_ee(
 
             // Check if the edges are parallel
             // The edgeEdgeCTCD sometimes returns toi for parallel edges!
-            std::vector<Vector3d> vt = {
+            std::array<Vector3d, 4> vt = {
                 (1.0-all_toi[i]) * verts0[0] + all_toi[i]*verts1[0],
                 (1.0-all_toi[i]) * verts0[1] + all_toi[i]*verts1[1],
                 (1.0-all_toi[i]) * verts0[2] + all_toi[i]*verts1[2],
