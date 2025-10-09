@@ -54,7 +54,8 @@ int main(int, char**)
     std::cout << "Building the tree: " << std::flush; 
     timer.start();
     mcl::ccd::BVHTree<double,3> tree;
-    tree.options.box_eta = std::numeric_limits<float>::epsilon();
+    tree.options.vf_ccd_eta = std::numeric_limits<float>::epsilon();
+    tree.options.ee_ccd_eta = std::numeric_limits<float>::epsilon();
     tree.update(V, V, F);
     std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 

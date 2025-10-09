@@ -35,11 +35,13 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
         return;
     }
 
-    assert(options.box_eta >= 0);
     assert(options.vf_ccd_eta >= 0);
     assert(options.ee_ccd_eta >= 0);
-    options.vf_ccd_eta = std::min(options.vf_ccd_eta, options.box_eta);
-    options.ee_ccd_eta = std::min(options.ee_ccd_eta, options.box_eta);
+    T box_eta = options.vf_ccd_eta;
+    if (DIM == 3)
+    {
+        box_eta = std::max(box_eta, options.ee_ccd_eta);
+    }
 
     bool update_reptri = false;
 
@@ -50,7 +52,7 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
     }
 
     // Update representative triangles
-    if (options.reptri && update_reptri)
+    if (update_reptri)
     {
         std::unordered_set<int> seen_verts;
         std::set<std::string> seen_edges;
@@ -113,12 +115,12 @@ void BVHTree<T,DIM>::update(const T* V0, const T* V1, const int *P, int np, int 
                 if (active[vi])
                     leaf.box.active = true;
         }
-        leaf.box.t0.min().array() -= options.box_eta;
-        leaf.box.t1.min().array() -= options.box_eta;
-        leaf.box.min().array() -= options.box_eta;
-        leaf.box.t0.max().array() += options.box_eta;
-        leaf.box.t1.max().array() += options.box_eta;
-        leaf.box.max().array() += options.box_eta;
+        leaf.box.t0.min().array() -= box_eta;
+        leaf.box.t1.min().array() -= box_eta;
+        leaf.box.min().array() -= box_eta;
+        leaf.box.t0.max().array() += box_eta;
+        leaf.box.t1.max().array() += box_eta;
+        leaf.box.max().array() += box_eta;
       }
     });
 
@@ -445,11 +447,7 @@ T BVHTree<T,DIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Ve
     int hit = 0;
     if (is_vf)
     {
-        if (options.vf_one_sided) {
-            hit = NarrowPhaseCTCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, options.vf_one_sided, toi);
-        } else {
-            hit = NarrowPhaseACCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, toi);
-        }
+        hit = NarrowPhaseACCD<T,DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, toi);
     }
     else
     {

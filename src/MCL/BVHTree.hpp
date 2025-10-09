@@ -37,31 +37,24 @@ public:
     typedef Eigen::Matrix<T,DIM,1> VecType;
     typedef std::pair<Eigen::Vector4i,bool> PairType; // [sten, is_vf]
     typedef std::pair<int, bool> NodeIndex; // [index, isleaf]
+    //constexpr int NumCandidates = DIM == 2 ? 
 
     std::vector<LeafType> leaves;
     std::shared_ptr<Eigen::KdBVH<T,DIM,LeafType> > tree;
 
     struct Options
     {
-        T box_eta; // padding of tree boxes
-        T vf_ccd_eta; // gap for vf narrowphase <= box_eta
-        T ee_ccd_eta; // gap for ee narrowphase <= box_eta
-        bool reptri; // representative triangles
+        T vf_ccd_eta; // gap for vf narrowphase
+        T ee_ccd_eta; // gap for ee narrowphase
         bool threaded; // cpu-threaded traverse(...)
         bool discrete; // discrete check ff/ee at V1
         bool continuous; // ccd check from V0 to V1
-        bool vf_one_sided; // allow pass-through if norm dir
-        bool ee_robust; // check VV and VE (if CTCD kernels)
         Options() :
-            box_eta(1e-6),
             vf_ccd_eta(1e-6),
             ee_ccd_eta(1e-6),
-            reptri(true),
             threaded(true),
             discrete(true),
-            continuous(true),
-            vf_one_sided(false),
-            ee_robust(true)
+            continuous(true)
             {}
     } options;
 
