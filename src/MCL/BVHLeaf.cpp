@@ -3,15 +3,14 @@
 
 #include "BVHLeaf.hpp"
 
-namespace mcl
-{
-namespace ccd
-{
+namespace mcl {
+namespace ccd {
 
 template<typename T, int DIM>
-BoundingBox<T,DIM> BoundingBox<T,DIM>::merged(const BoundingBox& b) const
+BoundingBox<T, DIM>
+BoundingBox<T, DIM>::merged(const BoundingBox& b) const
 {
-    BoundingBox<T,DIM> bb;
+    BoundingBox<T, DIM> bb;
     bb.active = this->active || b.active;
     bb.extend(this->min());
     bb.extend(this->max());
@@ -27,11 +26,11 @@ BoundingBox<T,DIM> BoundingBox<T,DIM>::merged(const BoundingBox& b) const
 } // end namespace ccd
 } // end namespace mcl
 
-template class mcl::ccd::BoundingBox<double,3>;
-template class mcl::ccd::BoundingBox<double,2>;
-template class mcl::ccd::BoundingBox<float,3>;
-template class mcl::ccd::BoundingBox<float,2>;
-template class mcl::ccd::BVHLeaf<double,3>;
-template class mcl::ccd::BVHLeaf<double,2>;
-template class mcl::ccd::BVHLeaf<float,3>;
-template class mcl::ccd::BVHLeaf<float,2>;
+template class mcl::ccd::BoundingBox<double, 3>;
+template class mcl::ccd::BoundingBox<double, 2>;
+template class mcl::ccd::BoundingBox<float, 3>;
+template class mcl::ccd::BoundingBox<float, 2>;
+template class mcl::ccd::BVHLeaf<double, 3>;
+template class mcl::ccd::BVHLeaf<double, 2>;
+template class mcl::ccd::BVHLeaf<float, 3>;
+template class mcl::ccd::BVHLeaf<float, 2>;
