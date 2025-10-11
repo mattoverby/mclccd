@@ -6,24 +6,23 @@
 
 #include <Eigen/Geometry>
 
-namespace mcl
-{
-namespace ccd
-{
+namespace mcl {
+namespace ccd {
 
 template<typename T, int DIM>
-class BoundingBox : public Eigen::AlignedBox<T,DIM>
+class BoundingBox : public Eigen::AlignedBox<T, DIM>
 {
-public:
+  public:
     bool active;
 
     // Box at t=0 and t=1
-    Eigen::AlignedBox<T,DIM> t0, t1;
-    
-    BoundingBox() :
-        Eigen::AlignedBox<T,DIM>(),
-        active(true)
-        {}
+    Eigen::AlignedBox<T, DIM> t0, t1;
+
+    BoundingBox()
+        : Eigen::AlignedBox<T, DIM>()
+        , active(true)
+    {
+    }
 
     virtual ~BoundingBox() {}
 
@@ -33,8 +32,8 @@ public:
 template<typename T, int DIM>
 class BVHLeaf
 {
-public:
-    typedef BoundingBox<T,DIM> BoxType;
+  public:
+    typedef BoundingBox<T, DIM> BoxType;
 
     // Index of the primitive
     int idx;
@@ -44,11 +43,12 @@ public:
 
     BoxType box;
 
-    BVHLeaf() :
-        idx(-1),
-        v(1,1,1),
-        e(1,1,1)
-        {}
+    BVHLeaf()
+        : idx(-1)
+        , v(1, 1, 1)
+        , e(1, 1, 1)
+    {
+    }
 
     virtual ~BVHLeaf() {}
 };
@@ -57,14 +57,13 @@ public:
 } // end namespace mcl
 
 // Used for Eigen's BVH module
-namespace Eigen
+namespace Eigen {
+template<typename T, int DIM>
+static inline typename mcl::ccd::BVHLeaf<T, DIM>::BoxType
+bounding_box(const mcl::ccd::BVHLeaf<T, DIM>& n)
 {
-    template<typename T, int DIM>
-    static inline typename mcl::ccd::BVHLeaf<T,DIM>::BoxType
-    bounding_box(const mcl::ccd::BVHLeaf<T,DIM> &n)
-    {
-        return n.box;
-    }
+    return n.box;
+}
 }
 
 #endif
