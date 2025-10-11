@@ -40,7 +40,7 @@ int main(int, char**)
         };
         tree.traverse(V, V, F);
 
-        assert_true(pairs.size() == 1, "didn't detect single intersection");
+        assert_true(pairs.size() == 1, "didn't detect single intersection: "+std::to_string(pairs.size()));
         assert_true(pairs[0][0] == 1 && pairs[0][1] == 0, "bad intersection prim idx");
     }
 

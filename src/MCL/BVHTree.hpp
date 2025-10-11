@@ -43,7 +43,7 @@ public:
     static const size_t NumCandidates = DIM == 2 ? 6 : 15; // narrowphase candidates
 
     std::vector<LeafType> leaves;
-    std::shared_ptr<Eigen::KdBVH<T,DIM,LeafType> > tree;
+    std::unique_ptr<Eigen::KdBVH<T,DIM,LeafType>> tree;
 
     struct Options
     {
@@ -62,7 +62,7 @@ public:
     } options;
 
     BVHTree();
-    virtual ~BVHTree() {}
+    virtual ~BVHTree();
 
     // V is n x dim with V0 at t=0 and V1 at t=1.
     // P can be m x 3 or 4, depending on the prim (tri or tet)
