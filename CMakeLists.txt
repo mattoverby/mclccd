@@ -1,11 +1,11 @@
 # Copyright Matt Overby 2021.
 # Distributed under the MIT License.
+
 cmake_minimum_required(VERSION 3.0)
 project(mclccd LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(FetchContent)
 
 option(MCLCCD_DEBUG "Compile in test mode" OFF)
 option(MCLCCD_TESTING_ONLY "only compile unit tests" OFF)

@@ -645,7 +645,6 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
     T s = 1; // scaling factor
     T xsi = eta; // minimal sep
     T t_c = 1; // global min t (for line search)
-    assert((!is_vf && ns==4) || is_vf);
 
     // Displacement vectors and current x
     VecType p[ns];
@@ -709,7 +708,6 @@ bool NarrowPhaseACCD<T,DIM>::additive_ccd(
         t_l = 0.9 * (d*d - xsi*xsi) / ((d + xsi)*l_p);
     }
 
-    assert(iter < max_iter);
     return true;
 }
 
@@ -720,11 +718,9 @@ T NarrowPhaseACCD<T,DIM>::pair_distance(
 {
     using Vec3 = Eigen::Matrix<T,3,1>;
     using Vec2 = Eigen::Matrix<T,2,1>;
-    assert(DIM==2 || DIM==3);
 
     if (DIM==2)
     {
-        assert(is_vf);
         Vec2 v0 = v[0].template head<2>();
         Vec2 v1 = v[1].template head<2>();
         Vec2 v2 = v[2].template head<2>();

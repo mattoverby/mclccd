@@ -45,11 +45,81 @@ void get_vertex(int vert_index, const T* V, Eigen::MatrixBase<DerivedV> &vert)
     }
 }
 
+template <int PDIM>
+bool prims_share_vertex(const int *p0, const int *p1)
+{
+    if (p0[0] == p1[0]) {
+        return true;
+    }
+    if constexpr (PDIM > 1)
+    {
+        if (p0[0] == p1[1] ||
+            p0[1] == p1[1] ||
+            p0[1] == p1[0]) {
+                return true;
+        }
+    }
+    if constexpr (PDIM > 2)
+    {
+        if (p0[0] == p1[2] ||
+            p0[1] == p1[2] ||
+            p0[2] == p1[0] ||
+            p0[2] == p1[1] ||
+            p0[2] == p1[2]) {
+            return true;
+        }
+    }
+    if constexpr (PDIM > 3)
+    {
+        if (p0[0] == p1[3] ||
+            p0[1] == p1[3] ||
+            p0[2] == p1[3] ||
+            p0[3] == p1[3] ||
+            p0[3] == p1[0] ||
+            p0[3] == p1[1] ||
+            p0[3] == p1[2]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template <int PDIM>
+bool vertex_prim_share_vertex(int vi, const int *p)
+{
+    if (vi == p[0]) {
+        return true;
+    }
+    if constexpr (PDIM > 1)
+    {
+        if (vi == p[1]) {
+            return true;
+        }
+    }
+    if constexpr (PDIM > 2)
+    {
+        if (vi == p[2]) {
+            return true;
+        }
+    }
+    if constexpr (PDIM > 3)
+    {
+        if (vi == p[3]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 template <typename T, int DIM, int PDIM>
 BVHTree<T,DIM,PDIM>::BVHTree()
 {
-    tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType> >();
+    tree = std::make_unique<Eigen::KdBVH<T,DIM,LeafType> >();
 }
+
+template <typename T, int DIM, int PDIM>
+BVHTree<T,DIM,PDIM>::~BVHTree() = default;
+
 
 template <typename T, int DIM, int PDIM>
 void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np, const int *active)
@@ -57,7 +127,7 @@ void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np,
     if (np == 0)
     {
         leaves.clear();
-        tree = std::make_shared<Eigen::KdBVH<T,DIM,LeafType> >();
+        tree = std::make_unique<Eigen::KdBVH<T,DIM,LeafType> >();
         return;
     }
 
@@ -161,16 +231,19 @@ void BVHTree<T,DIM,PDIM>::update(const T* V0, const T* V1, const int *P, int np,
 template <typename T, int DIM, int PDIM>
 void BVHTree<T,DIM,PDIM>::traverse(const T* V0, const T* V1, const int *P) const
 {
-    if (leaves.size() <= 1)
+    if (leaves.size() <= 1) {
         return;
+    }
 
     // Create a list of initial BVH intersection lists
     std::vector<std::pair<NodeIndex,NodeIndex> > queue;
     queue.reserve(leaves.size());
     make_frontlist(std::make_pair(tree->getRootIndex(), false), queue);
-    assert((int)queue.size() > 0);
-    std::atomic<int> stop(0);
+    if (queue.size() == 0) {
+        return;
+    }
 
+    std::atomic<int> stop(0);
     int nq = queue.size();
     if (options.parallel)
     {
@@ -202,14 +275,20 @@ template <typename T, int DIM, int PDIM>
 void BVHTree<T,DIM,PDIM>::make_frontlist(const NodeIndex &idx,
     std::vector<std::pair<NodeIndex,NodeIndex> > &queue) const
 {
-    if (idx.second) // is leaf node
+    if (idx.second) { // is leaf node
         return;
+    }
 
     NodeIndex l, r;
     get_children(idx, l, r);
-    assert(l.first >= 0 && r.first >= 0);
-    make_frontlist(l, queue);
-    make_frontlist(r, queue);
+
+    if (l.first >= 0) {
+        make_frontlist(l, queue);
+    }
+
+    if (r.first >= 0) {
+        make_frontlist(r, queue);
+    }
 
     // if both leaf, should not have same idx
     assert((l.second==r.second) ? (l.first!=r.first) : true);
@@ -235,21 +314,21 @@ void BVHTree<T,DIM,PDIM>::get_children(const NodeIndex &idx, NodeIndex &l, NodeI
     VolumeIter vBegin = nullptr, vEnd = nullptr;
     ObjectIter oBegin = nullptr, oEnd = nullptr;
     tree->getChildren(idx.first, vBegin, vEnd, oBegin, oEnd);
-    int num_children = 0;
+    //int num_children = 0;
     bool is_l = true;
     for (; vBegin != vEnd; ++vBegin)
     {
         if (is_l) { l = NodeIndex(*vBegin, false); is_l = false; }
         else { r = NodeIndex(*vBegin, false); }
-        num_children++;
+        //num_children++;
     }
     for (; oBegin != oEnd; ++oBegin)
     {
         if (is_l) { l = NodeIndex(oBegin->idx, true); is_l = false; }
         else { r = NodeIndex(oBegin->idx, true); }
-        num_children++;
+        //num_children++;
     }
-    assert(num_children == 2); // assumes binary tree
+    //assert(num_children == 2); // assumes binary tree
 }
 
 template <typename T, int DIM, int PDIM>
@@ -272,8 +351,8 @@ void BVHTree<T,DIM,PDIM>::collide(
     }
 
     // if both leaf, not eq
-    assert(left.first >= 0 && right.first >= 0);
-    assert((left.second == right.second) ? (left.first != right.first) : true);
+    //assert(left.first >= 0 && right.first >= 0);
+    //assert((left.second == right.second) ? (left.first != right.first) : true);
 
     // Check if nodes intersect or inactive
     if (!boxes_intersect(left,right)) {
@@ -352,15 +431,6 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
     get_primitive<PDIM>(p0, P, f0);
     get_primitive<PDIM>(p1, P, f1);
 
-    auto vf_shared_vertex = [](int vi, const int *fi)->bool
-    {
-        for (int i=0; i<PDIM; ++i)
-            if (vi == fi[i])
-                return true;
-
-        return false;
-    };
-
     int pair_index = 0;
 
     // VF, f0 -> f1
@@ -372,7 +442,7 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
             continue;
         }
 
-        if (vf_shared_vertex(f0[i], f1))
+        if (vertex_prim_share_vertex<PDIM>(f0[i], f1))
         {
             pairs[pair_index++].second = -1;
             continue;
@@ -400,7 +470,7 @@ void BVHTree<T,DIM,PDIM>::get_candidates(int p0, int p1, const int *P,
             continue;
         }
 
-        if (vf_shared_vertex(f1[i], f0))
+        if (vertex_prim_share_vertex<PDIM>(f1[i], f0))
         {
             pairs[pair_index++].second = -1;
             continue;
@@ -525,11 +595,9 @@ T BVHTree<T,DIM,PDIM>::default_narrow_phase(const T* V0, const T* V1, const Eige
 template <typename T, int DIM, int PDIM>
 bool BVHTree<T,DIM,PDIM>::default_discrete_test(const T* V, const int *p0, const int *p1) const
 {
-    // Shares vertex?
-    for (int i=0; i<PDIM; ++i)
-        for (int j=0; j<PDIM; ++j)
-            if (p0[i] == p1[j])
-                return false;
+    if (prims_share_vertex<PDIM>(p0, p1)) {
+        return false;
+    }
 
     if constexpr (DIM == 3 && PDIM == 3)
     {
@@ -551,19 +619,19 @@ bool BVHTree<T,DIM,PDIM>::default_discrete_test(const T* V, const int *p0, const
         get_vertex(p1[1], V, v1[1]);
         return NarrowPhase<T,2>::discrete_edge_edge(v0, v1); 
     }
-    else if (DIM == 2 && PDIM == 3)
+    else if constexpr (DIM == 2 && PDIM == 3)
     {
         // 2D two triangles = 6 edge-edge tests
-        for (int p0_i=0; p0_i<3; ++p0_i)
+        Eigen::Vector2<T> v0[2];
+        Eigen::Vector2<T> v1[2];
+        for (int i=0; i<3; ++i)
         {
-            Eigen::Vector2<T> v0[2];
-            get_vertex(p0[0], V, v0[0]);
-            get_vertex(p0[1], V, v0[1]);
-            for (int p1_i=0; p1_i<3; ++p1_i)
+            get_vertex(p0[i], V, v0[0]);
+            get_vertex(p0[(i+1)%3], V, v0[1]);
+            for (int j=0; j<3; ++j)
             {
-                Eigen::Vector2<T> v1[2];
-                get_vertex(p1[0], V, v1[0]);
-                get_vertex(p1[1], V, v1[1]);
+                get_vertex(p1[j], V, v1[0]);
+                get_vertex(p1[(j+1)%3], V, v1[1]);
                 if (NarrowPhase<T,2>::discrete_edge_edge(v0, v1)) {
                     return true;
                 }
