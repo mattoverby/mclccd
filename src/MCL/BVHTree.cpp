@@ -13,8 +13,6 @@
 #include <tbb/parallel_for.h>
 #include <chrono>
 
-#include <iostream>
-
 namespace mcl {
 namespace ccd {
 
@@ -135,10 +133,9 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
     }
 
     bool update_reptri = false;
-
     if ((int)leaves.size() != np) {
+        update_reptri = true;
         leaves.resize(np);
-        update_reptri = PDIM == 2 || PDIM == 3;
     }
 
     // Update representative triangles
@@ -170,12 +167,8 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
                     leaf.v[j] = 1;
                 }
 
-                if (PDIM != 3) {
-                    continue;
-                }
-
                 int e0 = vi;
-                int e1 = prim[(j + 1) % 3];
+                int e1 = prim[(j + 1) % PDIM];
                 if (e1 < e0) {
                     std::swap(e0, e1);
                 }
