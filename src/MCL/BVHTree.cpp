@@ -9,13 +9,23 @@
 #include "KdBVH.hpp"
 #include <unsupported/Eigen/BVH>
 
-#include <set>
 #include <string>
 #include <tbb/parallel_for.h>
-#include <unordered_set>
+#include <chrono>
 
 namespace mcl {
 namespace ccd {
+
+class Timer {
+public:
+    std::chrono::steady_clock::time_point start_time;
+    Timer() : start_time(std::chrono::steady_clock::now()) {}
+    double elapsed_ms() const {
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+        return double(duration.count());
+    }
+};
 
 template<int PDIM>
 void
@@ -108,7 +118,7 @@ BVHTree<T, DIM, PDIM>::~BVHTree() = default;
 template<typename T, int DIM, int PDIM>
 void
 BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, const int* active)
-{
+{    
     if (np == 0) {
         leaves.clear();
         tree = std::make_unique<Eigen::KdBVH<T, DIM, LeafType>>();
@@ -131,8 +141,9 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
 
     // Update representative triangles
     if (update_reptri) {
-        std::unordered_set<int> seen_verts;
-        std::set<std::string> seen_edges;
+
+        std::vector<int> seen_verts(np, 0);
+        std::vector<std::vector<int>> seen_edges(np);
 
         for (int i = 0; i < np; ++i) {
             BVHLeaf<T, DIM>& leaf = leaves[i];
@@ -140,8 +151,8 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             leaf.e.setZero();
             for (int j = 0; j < PDIM; ++j) {
                 int vi = P[i * PDIM + j];
-                bool v_not_seen = seen_verts.emplace(vi).second;
-                if (v_not_seen) {
+                if (seen_verts[vi] == 0) {
+                    seen_verts[vi] = 1;
                     leaf.v[j] = 1;
                 }
 
@@ -154,9 +165,10 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
                 if (e1 < e0) {
                     std::swap(e0, e1);
                 }
-                std::string h = std::to_string(e0) + ' ' + std::to_string(e1);
-                bool e_not_seen = seen_edges.emplace(h).second;
-                if (e_not_seen) {
+
+                std::vector<int>& neighbors = seen_edges[e0];
+                if (std::find(neighbors.begin(), neighbors.end(), e1) == neighbors.end()) {
+                    neighbors.emplace_back(e1);
                     leaf.e[j] = 1;
                 }
             }
@@ -184,10 +196,11 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
                 leaf.box.t1.extend(xi_t1);
                 leaf.box.extend(xi_t0);
                 leaf.box.extend(xi_t1);
-
-                if (active != nullptr)
-                    if (active[vi])
+                if (active != nullptr) {
+                    if (active[vi]) {
                         leaf.box.active = true;
+                    }
+                }
             }
             leaf.box.t0.min().array() -= box_eta;
             leaf.box.t1.min().array() -= box_eta;
@@ -214,7 +227,7 @@ BVHTree<T, DIM, PDIM>::traverse(const T* V0, const T* V1, const int* P) const
     std::vector<std::pair<NodeIndex, NodeIndex>> queue;
     queue.reserve(leaves.size());
     make_frontlist(std::make_pair(tree->getRootIndex(), false), queue);
-    if (queue.size() == 0) {
+    if (queue.empty()) {
         return;
     }
 
@@ -617,5 +630,7 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
 
 template class mcl::ccd::BVHTree<double, 3, 3>;
 template class mcl::ccd::BVHTree<double, 2, 3>;
+template class mcl::ccd::BVHTree<double, 3, 4>;
 template class mcl::ccd::BVHTree<float, 3, 3>;
 template class mcl::ccd::BVHTree<float, 2, 3>;
+template class mcl::ccd::BVHTree<float, 3, 4>;

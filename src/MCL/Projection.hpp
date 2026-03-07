@@ -2,7 +2,7 @@
 // Distributed under the MIT License.
 
 // Copied from https://github.com/mattoverby/mclgeom, March 2022.
-// Added namespace ccd.
+// Added namespace ccd and removed unused functions.
 
 #ifndef MCL_CCD_PROJECTION_HPP
 #define MCL_CCD_PROJECTION_HPP 1
@@ -19,25 +19,6 @@ point_on_triangle(const Eigen::Matrix<T, 3, 1>& point,
                   const Eigen::Matrix<T, 3, 1>& p1,
                   const Eigen::Matrix<T, 3, 1>& p2,
                   const Eigen::Matrix<T, 3, 1>& p3);
-
-// Projection on Sphere
-template<typename T>
-static inline Eigen::Matrix<T, 3, 1>
-point_on_sphere(const Eigen::Matrix<T, 3, 1>& point, const Eigen::Matrix<T, 3, 1>& center, const T& rad);
-
-// Projection on a Box
-template<typename T>
-static inline Eigen::Matrix<T, 3, 1>
-point_on_box(const Eigen::Matrix<T, 3, 1>& point,
-             const Eigen::Matrix<T, 3, 1>& bmin,
-             const Eigen::Matrix<T, 3, 1>& bmax);
-
-// Project a point on to a plane
-template<typename T>
-static inline Eigen::Matrix<T, 3, 1>
-point_on_plane(const Eigen::Matrix<T, 3, 1>& point,
-               const Eigen::Matrix<T, 3, 1>& plane_norm,
-               const Eigen::Matrix<T, 3, 1>& plane_pt);
 
 // Projection on an edge
 template<typename T>
@@ -148,52 +129,6 @@ point_on_triangle(const Eigen::Matrix<T, 3, 1>& point,
     return (p1 + edge0 * s + edge1 * t);
 
 } // end project triangle
-
-template<typename T>
-Eigen::Matrix<T, 3, 1>
-point_on_sphere(const Eigen::Matrix<T, 3, 1>& point, const Eigen::Matrix<T, 3, 1>& center, const T& rad)
-{
-    Eigen::Matrix<T, 3, 1> dir = point - center;
-    dir.normalize();
-    return (center + dir * rad);
-} // end project sphere
-
-template<typename T>
-Eigen::Matrix<T, 3, 1>
-point_on_box(const Eigen::Matrix<T, 3, 1>& point,
-             const Eigen::Matrix<T, 3, 1>& bmin,
-             const Eigen::Matrix<T, 3, 1>& bmax)
-{
-    // Loops through axes and moves point to nearest surface
-    Eigen::Matrix<T, 3, 1> x = point;
-    T dx = std::numeric_limits<T>::max();
-    for (int i = 0; i < 3; ++i) {
-        T dx_max = std::abs(bmax[i] - point[i]);
-        T dx_min = std::abs(bmin[i] - point[i]);
-        if (dx_max < dx) {
-            x = point;
-            x[i] = bmax[i];
-            dx = dx_max;
-        }
-        if (dx_min < dx) {
-            x = point;
-            x[i] = bmin[i];
-            dx = dx_min;
-        }
-    }
-    return x;
-} // end project box
-
-template<typename T>
-Eigen::Matrix<T, 3, 1>
-point_on_plane(const Eigen::Matrix<T, 3, 1>& point,
-               const Eigen::Matrix<T, 3, 1>& plane_norm,
-               const Eigen::Matrix<T, 3, 1>& plane_pt)
-{
-    T d = -1 * plane_norm.dot(point - plane_pt);
-    Eigen::Matrix<T, 3, 1> t_vec = plane_norm * d;
-    return point + t_vec;
-}
 
 template<typename T>
 static Eigen::Matrix<T, 2, 1>
