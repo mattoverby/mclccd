@@ -4,7 +4,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(mclccd LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(MCLCCD_DEBUG "Compile in test mode" OFF)
@@ -29,21 +28,31 @@ find_package(TBB REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 # Create the library
-file(GLOB MCLBVH_INCLUDE
-	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.hpp)
-file(GLOB MCLBVH_SRC
-	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/*.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.h
-	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/third-party/*.cpp)
+set(MCLBVH_INCLUDE
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHLeaf.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHTree.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/KdBVH.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/NarrowPhase.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/Projection.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/CTCD.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/Distance.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/rpoly.h
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/tt_isect.hpp)
+set(MCLBVH_SRC
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHLeaf.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHTree.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/NarrowPhase.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/CTCD.cpp)
 add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)
 target_include_directories(${PROJECT_NAME} INTERFACE
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 add_library(mcl::ccd ALIAS ${PROJECT_NAME})
 
 # build viewer tests
-if(MCLGEOM_EXAMPLES)
+if(MCLCCD_EXAMPLES)
 	include(libigl)
 	igl_include(glfw)
 	add_definitions(-DMCLCCD_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
