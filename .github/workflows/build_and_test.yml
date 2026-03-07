@@ -22,7 +22,7 @@ jobs:
     - name: build
       working-directory: ${{ github.workspace }} 
       run: |
-        cmake -DMCLCCD_TESTING_ONLY=ON .
+        cmake -DMCLCCD_UNIT_TESTS=ON .
         make -j
 
     - name: test
