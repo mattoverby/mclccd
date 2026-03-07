@@ -13,6 +13,8 @@
 #include <tbb/parallel_for.h>
 #include <chrono>
 
+#include <iostream>
+
 namespace mcl {
 namespace ccd {
 
@@ -142,8 +144,9 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
     // Update representative triangles
     if (update_reptri) {
 
-        std::vector<int> seen_verts(np, 0);
-        std::vector<std::vector<int>> seen_edges(np);
+        int n_verts_guess = np; // reallocate as needed
+        std::vector<int> seen_verts(n_verts_guess, 0);
+        std::vector<std::vector<int>> seen_edges(n_verts_guess);
 
         for (int i = 0; i < np; ++i) {
             BVHLeaf<T, DIM>& leaf = leaves[i];
@@ -151,6 +154,13 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             leaf.e.setZero();
             for (int j = 0; j < PDIM; ++j) {
                 int vi = P[i * PDIM + j];
+                if (vi >= n_verts_guess)
+                {
+                    n_verts_guess *= 2;
+                    seen_verts.resize(n_verts_guess, 0);
+                    seen_edges.resize(n_verts_guess);
+                }
+
                 if (seen_verts[vi] == 0) {
                     seen_verts[vi] = 1;
                     leaf.v[j] = 1;
