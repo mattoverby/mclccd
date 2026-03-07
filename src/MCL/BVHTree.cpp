@@ -152,15 +152,19 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             BVHLeaf<T, DIM>& leaf = leaves[i];
             leaf.v.setZero();
             leaf.e.setZero();
-            for (int j = 0; j < PDIM; ++j) {
-                int vi = P[i * PDIM + j];
-                if (vi >= n_verts_guess)
-                {
-                    n_verts_guess *= 2;
-                    seen_verts.resize(n_verts_guess, 0);
-                    seen_edges.resize(n_verts_guess);
-                }
+    
+            int prim[PDIM];
+            get_primitive<PDIM>(i, P, prim);
+            int maxInd = *std::max_element(prim, prim + PDIM);
+            if (maxInd >= n_verts_guess)
+            {
+                n_verts_guess *= 2;
+                seen_verts.resize(n_verts_guess, 0);
+                seen_edges.resize(n_verts_guess);
+            }
 
+            for (int j = 0; j < PDIM; ++j) {
+                int vi = prim[j];
                 if (seen_verts[vi] == 0) {
                     seen_verts[vi] = 1;
                     leaf.v[j] = 1;
@@ -171,7 +175,7 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
                 }
 
                 int e0 = vi;
-                int e1 = P[i * PDIM + ((j + 1) % 3)];
+                int e1 = prim[(j + 1) % 3];
                 if (e1 < e0) {
                     std::swap(e0, e1);
                 }
