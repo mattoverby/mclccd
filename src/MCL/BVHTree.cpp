@@ -153,7 +153,7 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             int prim[PDIM];
             get_primitive<PDIM>(i, P, prim);
             int maxInd = *std::max_element(prim, prim + PDIM);
-            if (maxInd >= n_verts_guess)
+            while (maxInd >= n_verts_guess)
             {
                 n_verts_guess *= 2;
                 seen_verts.resize(n_verts_guess, 0);
