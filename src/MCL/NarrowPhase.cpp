@@ -253,19 +253,18 @@ NarrowPhase<float, 2>::discrete_tri_tri(const Eigen::Vector3f*, const Eigen::Vec
     return false;
 }
 
-template<>
-bool
-NarrowPhase<double, 2>::discrete_edge_edge(const Eigen::Vector2d* e0, const Eigen::Vector2d* e1)
+template<typename T, int DIM>
+bool NarrowPhase<T,DIM>::discrete_edge_edge(const Vec2* e0, const Vec2* e1)
 {
-    // From https://stackoverflow.com/a/565282
     using namespace Eigen;
+
+    // From https://stackoverflow.com/a/565282
+    // Cast to double, does not work well with floats.
     constexpr double eps = std::numeric_limits<double>::epsilon();
-
-    const Vector2d& p0 = e0[0];
-    const Vector2d& p1 = e0[1];
-    const Vector2d& q0 = e1[0];
-    const Vector2d& q1 = e1[1];
-
+    const Vector2d& p0 = e0[0].template cast<double>();
+    const Vector2d& p1 = e0[1].template cast<double>();
+    const Vector2d& q0 = e1[0].template cast<double>();
+    const Vector2d& q1 = e1[1].template cast<double>();
     Vector2d n(q0[0] - p0[0], q0[1] - p0[1]);
     Vector2d r(p1[0] - p0[0], p1[1] - p0[1]);
     Vector2d s(q1[0] - q0[0], q1[1] - q0[1]);
@@ -285,30 +284,21 @@ NarrowPhase<double, 2>::discrete_edge_edge(const Eigen::Vector2d* e0, const Eige
     return (t >= 0) && (t <= 1) && (u >= 0) && (u <= 1);
 }
 
-template<>
-bool
-NarrowPhase<float, 2>::discrete_edge_edge(const Eigen::Vector2f* e0_, const Eigen::Vector2f* e1_)
+template<typename T, int DIM>
+bool NarrowPhase<T,DIM>::point_in_tet(const Vec3 &p,
+    const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec3 &v3)
 {
-    Eigen::Vector2d e0[3], e1[3];
-    for (int i = 0; i < 2; ++i) {
-        e0[i] = e0_[i].cast<double>();
-        e1[i] = e1_[i].cast<double>();
-    }
-    return NarrowPhase<double, 2>::discrete_edge_edge(e0, e1);
-}
+    auto scalar_triple_product = [](const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d) {
+        return (b-a).cross(c-a).dot(d-a);
+    };
 
-template<>
-bool
-NarrowPhase<double, 3>::discrete_edge_edge(const Eigen::Vector2d*, const Eigen::Vector2d*)
-{
-    return false;
-}
-
-template<>
-bool
-NarrowPhase<float, 3>::discrete_edge_edge(const Eigen::Vector2f*, const Eigen::Vector2f*)
-{
-    return false;
+    T s0 = scalar_triple_product(v0, v1, v2, p);
+    T s1 = scalar_triple_product(v0, v1, v3, p);
+    T s2 = scalar_triple_product(v0, v2, v3, p);
+    T s3 = scalar_triple_product(v1, v2, v3, p);
+    bool pos = (s0>=0 && s1>=0 && s2>=0 && s3>=0);
+    bool neg = (s0<=0 && s1<=0 && s2<=0 && s3<=0);
+    return pos || neg;
 }
 
 // ---------------------------------------------------------

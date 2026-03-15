@@ -386,11 +386,16 @@ BVHTree<T, DIM, PDIM>::collide(const T* V0,
         }
 
         if (options.discrete) {
-            int p0[PDIM], p1[PDIM];
-            get_primitive<PDIM>(left.first, P, p0);
-            get_primitive<PDIM>(right.first, P, p1);
-            bool d_hit = default_discrete_test(V1, p0, p1);
-            if (d_hit && append_discrete != nullptr) {
+            bool prims_intersected = false;
+            if (discrete_test != nullptr) {
+                prims_intersected = discrete_test(left.first, right.first);
+            } else {
+                int p0[PDIM], p1[PDIM];
+                get_primitive<PDIM>(left.first, P, p0);
+                get_primitive<PDIM>(right.first, P, p1);
+                prims_intersected = default_discrete_test(V1, p0, p1);
+            }
+            if (prims_intersected && append_discrete != nullptr) {
                 bool stop_traverse = append_discrete(left.first, right.first);
                 if (stop_traverse) {
                     stop++;
@@ -595,38 +600,65 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
         return false;
     }
 
-    if constexpr (DIM == 3 && PDIM == 3) {
-        Eigen::Vector3<T> v0[3], v1[3];
-        get_vertex(p0[0], V, v0[0]);
-        get_vertex(p0[1], V, v0[1]);
-        get_vertex(p0[2], V, v0[2]);
-        get_vertex(p1[0], V, v1[0]);
-        get_vertex(p1[1], V, v1[1]);
-        get_vertex(p1[2], V, v1[2]);
-        return NarrowPhase<T, 3>::discrete_tri_tri(v0, v1);
-    } else if constexpr (DIM == 2 && PDIM == 2) {
-        Eigen::Vector2<T> v0[2], v1[2];
-        get_vertex(p0[0], V, v0[0]);
-        get_vertex(p0[1], V, v0[1]);
-        get_vertex(p1[0], V, v1[0]);
-        get_vertex(p1[1], V, v1[1]);
-        return NarrowPhase<T, 2>::discrete_edge_edge(v0, v1);
-    } else if constexpr (DIM == 2 && PDIM == 3) {
-        // 2D two triangles = 6 edge-edge tests
-        Eigen::Vector2<T> v0[2];
-        Eigen::Vector2<T> v1[2];
-        for (int i = 0; i < 3; ++i) {
-            get_vertex(p0[i], V, v0[0]);
-            get_vertex(p0[(i + 1) % 3], V, v0[1]);
-            for (int j = 0; j < 3; ++j) {
-                get_vertex(p1[j], V, v1[0]);
-                get_vertex(p1[(j + 1) % 3], V, v1[1]);
-                if (NarrowPhase<T, 2>::discrete_edge_edge(v0, v1)) {
+    if constexpr (DIM == 3) {
+        if constexpr (PDIM == 3) { // 3D triangles
+            Eigen::Vector3<T> v0[3], v1[3];
+            get_vertex(p0[0], V, v0[0]);
+            get_vertex(p0[1], V, v0[1]);
+            get_vertex(p0[2], V, v0[2]);
+            get_vertex(p1[0], V, v1[0]);
+            get_vertex(p1[1], V, v1[1]);
+            get_vertex(p1[2], V, v1[2]);
+            return NarrowPhase<T, 3>::discrete_tri_tri(v0, v1);
+        }
+        if constexpr (PDIM == 3) { // 3D tets
+            Eigen::Vector3<T> v0[4], v1[4];
+            get_vertex(p0[0], V, v0[0]);
+            get_vertex(p0[1], V, v0[1]);
+            get_vertex(p0[2], V, v0[2]);
+            get_vertex(p0[3], V, v0[3]);
+            get_vertex(p1[0], V, v1[0]);
+            get_vertex(p1[1], V, v1[1]);
+            get_vertex(p1[2], V, v1[2]);
+            get_vertex(p1[3], V, v1[3]);
+
+            // NOTE: Point-in-tet is not a full tet-tet intersection test.
+            // But, point-in-tet is usually what I want if doing tet collisions :)
+            for (int i=0;i<4;i++) {
+                if (NarrowPhase<T, 3>::point_in_tet(v0[i], v1[0], v1[1], v1[2], v1[3])) {
+                    return true;
+                }
+                if (NarrowPhase<T, 3>::point_in_tet(v1[i], v0[0], v0[1], v0[2], v0[3])) {
                     return true;
                 }
             }
         }
-        return false;
+    }
+    else if constexpr (DIM == 2) {
+        if constexpr (PDIM == 2) { // 2D edges
+            Eigen::Vector2<T> v0[2], v1[2];
+            get_vertex(p0[0], V, v0[0]);
+            get_vertex(p0[1], V, v0[1]);
+            get_vertex(p1[0], V, v1[0]);
+            get_vertex(p1[1], V, v1[1]);
+            return NarrowPhase<T, 2>::discrete_edge_edge(v0, v1);
+        }
+        else if constexpr (PDIM == 3) { // 2D triangles
+            Eigen::Vector2<T> v0[2];
+            Eigen::Vector2<T> v1[2];
+            for (int i = 0; i < 3; ++i) {
+                get_vertex(p0[i], V, v0[0]);
+                get_vertex(p0[(i + 1) % 3], V, v0[1]);
+                for (int j = 0; j < 3; ++j) {
+                    get_vertex(p1[j], V, v1[0]);
+                    get_vertex(p1[(j + 1) % 3], V, v1[1]);
+                    if (NarrowPhase<T, 2>::discrete_edge_edge(v0, v1)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     return false;

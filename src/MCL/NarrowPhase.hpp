@@ -13,9 +13,9 @@ template<typename T, int DIM>
 class NarrowPhase
 {
   public:
-    typedef Eigen::Matrix<T, DIM, 1> VecType;
-    using Vec3 = Eigen::Matrix<T, 3, 1>;
-    using Vec2 = Eigen::Matrix<T, 2, 1>;
+    using VecType = Eigen::Matrix<T, DIM, 1>;
+    using Vec3 = Eigen::Vector3<T>;
+    using Vec2 = Eigen::Vector2<T>;
 
     static bool hit_wrong_side_vf(const VecType* v0, const VecType* v1, T t);
 
@@ -31,6 +31,10 @@ class NarrowPhase
 
     // e0 and e1 are arrays of two vertices
     static bool discrete_edge_edge(const Vec2* e0, const Vec2* e1);
+
+    /// @brief Returns true if the point is inside the tetrahedron.
+    static bool point_in_tet(const Vec3 &p,
+        const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec3 &v3);
 };
 
 // Even though float is allowed as a template, everything is casted
