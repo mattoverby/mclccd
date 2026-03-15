@@ -38,11 +38,9 @@ class BVHTree
 {
   public:
     typedef BVHLeaf<T, DIM> LeafType;
-    typedef Eigen::Matrix<T, DIM, 1> VecType;
     typedef std::pair<Eigen::Vector4i, int> PairType;      // [sten, -1=invalid, 0=ee, 1=vf]
     typedef std::pair<int, bool> NodeIndex;                // [index, isleaf]
     static const size_t NumCandidates = DIM == 2 ? 6 : 15; // narrowphase candidates
-
     std::vector<LeafType> leaves;
     std::unique_ptr<Eigen::KdBVH<T, DIM, LeafType>> tree;
 
@@ -63,7 +61,10 @@ class BVHTree
         }
     } options;
 
+    /// @brief Constructor
     BVHTree();
+
+    /// @brief Destructor
     virtual ~BVHTree();
 
     /// @brief Updates the BVH.
@@ -80,11 +81,11 @@ class BVHTree
     /// @brief Update BVH as above
     void update(const T* V0, const T* V1, const int* P, int np, const int* active = nullptr);
 
-    // Traverses tree and checks from V0 to V1 with P = edges (DIM=2) or faces (DIM==3).
-    // Calls narrow_phase, append_pair, and append_discrete.
+    /// @brief Traverses tree and checks from V0 to V1 with P = edges (DIM=2) or faces (DIM==3).
+    /// Calls narrow_phase, append_pair, and append_discrete.
     void traverse(const T* V0, const T* V1, const int* P) const;
 
-    // Traverse but with Eigen vectors (makes RowMajor copies)
+    /// @brief Traverse but with Eigen vectors (makes RowMajor copies)
     template<typename DerivedV, typename DerivedP>
     inline void traverse(const Eigen::MatrixBase<DerivedV>& V0,
                          const Eigen::MatrixBase<DerivedV>& V1,
@@ -95,13 +96,13 @@ class BVHTree
 
     /// @brief This function is called from a thread during CCD if two primitives collide
     /// (and options.continuous==true). It's how you retrieve continuous collisions.
-    /// It is called from parallel threads (if options.threaded==true).
+    /// It is called from parallel threads (if options.parallel==true).
     /// If is_vf==false, it is an edge-edge collision.
     std::function<void(const Eigen::Vector4i& sten, bool is_vf, const T& toi)> append_pair;
 
     /// @brief This function is called from a thread if there is a discrete isect
     /// (and options.discrete==true). It's how you retrieve discrete collisions.
-    /// It is called from parallel threads (if options.threaded==true).
+    /// It is called from parallel threads (if options.parallel==true).
     /// Return true to exit traversal immediately.
     std::function<bool(int p0, int p1)> append_discrete;
 

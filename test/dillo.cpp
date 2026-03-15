@@ -4,32 +4,33 @@
 #include "MCL/BVHTree.hpp"
 #include "MCL/NarrowPhase.hpp"
 
-#include <tbb/concurrent_unordered_set.h>
-#include <tbb/concurrent_vector.h>
 #include <atomic>
 #include <iostream>
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_vector.h>
 
-#include <igl/opengl/glfw/Viewer.h>
-#include <igl/readPLY.h>
-#include <igl/readOBJ.h>
 #include <igl/Timer.h>
+#include <igl/opengl/glfw/Viewer.h>
+#include <igl/readOBJ.h>
+#include <igl/readPLY.h>
 
 // Collects AABB nodes for rendering
-class NodeCollector : public mcl::ccd::BVHTraverse<double,3>
+class NodeCollector : public mcl::ccd::BVHTraverse<double, 3>
 {
-public:
-    using mcl::ccd::BVHTraverse<double,3>::VolumeType;
-    using mcl::ccd::BVHTraverse<double,3>::ObjectType;
+  public:
+    using mcl::ccd::BVHTraverse<double, 3>::VolumeType;
+    using mcl::ccd::BVHTraverse<double, 3>::ObjectType;
     std::vector<Eigen::Vector3d> edges0, edges1;
-    bool intersectVolume(const VolumeType &volume);
+    bool intersectVolume(const VolumeType& volume);
     bool intersectObject(const ObjectType&) { return false; }
 };
 
-typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> RowMatrixXd;
-typedef Eigen::Matrix<int,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> RowMatrixXi;
+typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXd;
+typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXi;
 
 // Load and render a dillo
-int main(int, char**)
+int
+main(int, char**)
 {
     igl::Timer timer;
 
@@ -38,7 +39,7 @@ int main(int, char**)
     MatrixXd V_;
     MatrixXi F_;
     if (!igl::readPLY(MCLCCD_ROOT_DIR "/data/armadillo.ply", V_, F_)) // no intersections but small elements
-    //if (!igl::readOBJ(MCLCCD_ROOT_DIR "/data/hand.obj", V_, F_)) // has discrete self-intersections
+        // if (!igl::readOBJ(MCLCCD_ROOT_DIR "/data/hand.obj", V_, F_)) // has discrete self-intersections
         return EXIT_FAILURE;
 
     std::cout << "Num faces: " << F_.rows() << ", num verts: " << V_.rows() << std::endl;
@@ -51,26 +52,24 @@ int main(int, char**)
     RowMatrixXi F = F_;
 
     // Initialize the tree
-    std::cout << "Building the tree: " << std::flush; 
+    std::cout << "Building the tree: " << std::flush;
     timer.start();
-    mcl::ccd::BVHTree<double,3> tree;
+    mcl::ccd::BVHTree<double, 3> tree;
     tree.options.vf_ccd_eta = std::numeric_limits<float>::epsilon();
     tree.options.ee_ccd_eta = std::numeric_limits<float>::epsilon();
     tree.update(V, V, F);
     std::cout << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // Traverse BVH for intersections
-    std::cout << "Performing CCD: " << std::flush; 
+    std::cout << "Performing CCD: " << std::flush;
     timer.start();
-    tbb::concurrent_vector<std::pair<Eigen::Vector4i,int>> pairs;
+    tbb::concurrent_vector<std::pair<Eigen::Vector4i, int>> pairs;
     tbb::concurrent_unordered_set<int> discrete;
-    tree.append_pair = [&](const Eigen::Vector4i &sten, int type, const double &toi)->void
-    {
+    tree.append_pair = [&](const Eigen::Vector4i& sten, int type, const double& toi) -> void {
         (void)(toi);
         pairs.emplace_back(sten, type);
     };
-    tree.append_discrete = [&](int p0, int p1)->bool
-    {
+    tree.append_discrete = [&](int p0, int p1) -> bool {
         discrete.emplace(p0);
         discrete.emplace(p1);
         return false; // don't stop traversing
@@ -89,18 +88,18 @@ int main(int, char**)
     MatrixXd e0(collector.edges0.size(), 3);
     MatrixXd e1(collector.edges1.size(), 3);
     int ne = e0.rows();
-    for (int i=0; i<ne; ++i)
-    {
+    for (int i = 0; i < ne; ++i) {
         e0.row(i) = collector.edges0[i];
         e1.row(i) = collector.edges1[i];
     }
 
     // Per-face colors
     MatrixXd C = MatrixXd::Ones(F.rows(), 3) * 0.7;
-    for (tbb::concurrent_unordered_set<int>::const_iterator it = discrete.begin();
-        it != discrete.end(); ++it) { C.row(*it) = RowVector3d(1,0,0); }
+    for (tbb::concurrent_unordered_set<int>::const_iterator it = discrete.begin(); it != discrete.end(); ++it) {
+        C.row(*it) = RowVector3d(1, 0, 0);
+    }
 
-    viewer.data().add_edges(e0, e1, RowVector3d(1,0,0));
+    viewer.data().add_edges(e0, e1, RowVector3d(1, 0, 0));
     viewer.data().set_colors(C);
 
     // Launch viewer
@@ -109,8 +108,8 @@ int main(int, char**)
     return EXIT_SUCCESS;
 }
 
-
-bool NodeCollector::intersectVolume(const VolumeType &volume)
+bool
+NodeCollector::intersectVolume(const VolumeType& volume)
 {
     using namespace Eigen;
     Vector3d min = volume.min();
@@ -129,19 +128,31 @@ bool NodeCollector::intersectVolume(const VolumeType &volume)
 
     // make edges
     // bottom
-    edges0.emplace_back(a); edges1.emplace_back(b);
-    edges0.emplace_back(a); edges1.emplace_back(d);
-    edges0.emplace_back(c); edges1.emplace_back(b);
-    edges0.emplace_back(c); edges1.emplace_back(d);
+    edges0.emplace_back(a);
+    edges1.emplace_back(b);
+    edges0.emplace_back(a);
+    edges1.emplace_back(d);
+    edges0.emplace_back(c);
+    edges1.emplace_back(b);
+    edges0.emplace_back(c);
+    edges1.emplace_back(d);
     // top
-    edges0.emplace_back(e); edges1.emplace_back(f);
-    edges0.emplace_back(e); edges1.emplace_back(h);
-    edges0.emplace_back(g); edges1.emplace_back(f);
-    edges0.emplace_back(g); edges1.emplace_back(h);
+    edges0.emplace_back(e);
+    edges1.emplace_back(f);
+    edges0.emplace_back(e);
+    edges1.emplace_back(h);
+    edges0.emplace_back(g);
+    edges1.emplace_back(f);
+    edges0.emplace_back(g);
+    edges1.emplace_back(h);
     // columns
-    edges0.emplace_back(d); edges1.emplace_back(h);
-    edges0.emplace_back(min); edges1.emplace_back(e);
-    edges0.emplace_back(b); edges1.emplace_back(f);
-    edges0.emplace_back(c); edges1.emplace_back(max);
+    edges0.emplace_back(d);
+    edges1.emplace_back(h);
+    edges0.emplace_back(min);
+    edges1.emplace_back(e);
+    edges0.emplace_back(b);
+    edges1.emplace_back(f);
+    edges0.emplace_back(c);
+    edges1.emplace_back(max);
     return true;
 }

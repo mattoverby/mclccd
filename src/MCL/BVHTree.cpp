@@ -9,24 +9,30 @@
 #include "KdBVH.hpp"
 #include <unsupported/Eigen/BVH>
 
+#include <chrono>
 #include <string>
 #include <tbb/parallel_for.h>
-#include <chrono>
 
 namespace mcl {
 namespace ccd {
 
-class Timer {
-public:
+class Timer
+{
+  public:
     std::chrono::steady_clock::time_point start_time;
-    Timer() : start_time(std::chrono::steady_clock::now()) {}
-    double elapsed_ms() const {
+    Timer()
+        : start_time(std::chrono::steady_clock::now())
+    {
+    }
+    double elapsed_ms() const
+    {
         auto now = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
         return double(duration.count());
     }
 };
 
+/// @brief Returns a primtive
 template<int PDIM>
 void
 get_primitive(int prim_index, const int* P, int prim[PDIM])
@@ -43,11 +49,15 @@ get_primitive(int prim_index, const int* P, int prim[PDIM])
     }
 }
 
+/// @brief Returns a vertex
 template<typename T, typename DerivedV>
 void
 get_vertex(int vert_index, const T* V, Eigen::MatrixBase<DerivedV>& vert)
 {
     constexpr int DIM = Eigen::MatrixBase<DerivedV>::SizeAtCompileTime;
+    if (vert_index < 0) {
+        return;
+    }
     vert[0] = V[vert_index * DIM + 0];
     vert[1] = V[vert_index * DIM + 1];
     if constexpr (DIM > 2) {
@@ -55,6 +65,26 @@ get_vertex(int vert_index, const T* V, Eigen::MatrixBase<DerivedV>& vert)
     }
 }
 
+/// @brief Returns all vertices of a primitive (up to PDIM=4)
+template<typename T, int DIM, int PDIM>
+std::array<Eigen::Vector<T, DIM>, PDIM>
+get_vertices(const T* V, const int* prim)
+{
+    std::array<Eigen::Vector<T, DIM>, PDIM> verts;
+    get_vertex(prim[0], V, verts[0]);
+    if constexpr (PDIM > 1) {
+        get_vertex(prim[1], V, verts[1]);
+    }
+    if constexpr (PDIM > 2) {
+        get_vertex(prim[2], V, verts[2]);
+    }
+    if constexpr (PDIM > 3) {
+        get_vertex(prim[3], V, verts[3]);
+    }
+    return verts;
+}
+
+/// @brief Returns true if two primitives share a vertex (up to PDIM=4)
 template<int PDIM>
 bool
 prims_share_vertex(const int* p0, const int* p1)
@@ -73,7 +103,8 @@ prims_share_vertex(const int* p0, const int* p1)
         }
     }
     if constexpr (PDIM > 3) {
-        if (p0[0] == p1[3] || p0[1] == p1[3] || p0[2] == p1[3] || p0[3] == p1[3] || p0[3] == p1[0] || p0[3] == p1[1] ||
+        if (p0[0] == p1[3] || p0[1] == p1[3] || p0[2] == p1[3] || //
+            p0[3] == p1[3] || p0[3] == p1[0] || p0[3] == p1[1] || //
             p0[3] == p1[2]) {
             return true;
         }
@@ -81,6 +112,7 @@ prims_share_vertex(const int* p0, const int* p1)
     return false;
 }
 
+/// @brief Returns true if the vertex index is in the primitive (up to PDIM=4)
 template<int PDIM>
 bool
 vertex_prim_share_vertex(int vi, const int* p)
@@ -118,7 +150,7 @@ BVHTree<T, DIM, PDIM>::~BVHTree() = default;
 template<typename T, int DIM, int PDIM>
 void
 BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, const int* active)
-{    
+{
     if (np == 0) {
         leaves.clear();
         tree = std::make_unique<Eigen::KdBVH<T, DIM, LeafType>>();
@@ -149,12 +181,11 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             BVHLeaf<T, DIM>& leaf = leaves[i];
             leaf.v.setZero();
             leaf.e.setZero();
-    
+
             int prim[PDIM];
             get_primitive<PDIM>(i, P, prim);
             int maxInd = *std::max_element(prim, prim + PDIM);
-            while (maxInd >= n_verts_guess)
-            {
+            while (maxInd >= n_verts_guess) {
                 n_verts_guess *= 2;
                 seen_verts.resize(n_verts_guess, 0);
                 seen_edges.resize(n_verts_guess);
@@ -195,8 +226,8 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             leaf.box.t1.setEmpty();
             for (int j = 0; j < PDIM; ++j) {
                 int vi = P[i * PDIM + j];
-                VecType xi_t0 = VecType::Zero();
-                VecType xi_t1 = VecType::Zero();
+                Eigen::Vector<T, DIM> xi_t0 = Eigen::Vector<T, DIM>::Zero();
+                Eigen::Vector<T, DIM> xi_t1 = Eigen::Vector<T, DIM>::Zero();
                 get_vertex(vi, V0, xi_t0);
                 get_vertex(vi, V1, xi_t1);
                 leaf.box.t0.extend(xi_t0);
@@ -566,23 +597,14 @@ template<typename T, int DIM, int PDIM>
 T
 BVHTree<T, DIM, PDIM>::default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i& sten, bool is_vf) const
 {
-    // stencil is PDIM + 1, i.e., edges = vertex-edge, triangles = vertex-triangle
-    // or edge-edge
-    VecType verts0[PDIM + 1], verts1[PDIM + 1];
-    for (int i = 0; i < PDIM + 1; ++i) {
-        if (sten[i] < 0) {
-            return -2; // error
-        }
-        get_vertex(sten[i], V0, verts0[i]);
-        get_vertex(sten[i], V1, verts1[i]);
-    }
-
+    auto verts_t0 = get_vertices<T, DIM, 4>(V0, sten.data());
+    auto verts_t1 = get_vertices<T, DIM, 4>(V1, sten.data());
     T toi = -1;
     int hit = 0;
     if (is_vf) {
-        hit = NarrowPhaseACCD<T, DIM>::query_ccd_vf(verts0, verts1, options.vf_ccd_eta, toi);
+        hit = NarrowPhaseACCD<T, DIM>::query_ccd_vf(verts_t0.data(), verts_t1.data(), options.vf_ccd_eta, toi);
     } else {
-        hit = NarrowPhaseACCD<T, DIM>::query_ccd_ee(verts0, verts1, options.ee_ccd_eta, toi);
+        hit = NarrowPhaseACCD<T, DIM>::query_ccd_ee(verts_t0.data(), verts_t1.data(), options.ee_ccd_eta, toi);
     }
 
     if (hit == 1) {
@@ -600,50 +622,29 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
         return false;
     }
 
+    auto p = get_vertices<T, DIM, PDIM>(V, p0);
+    auto q = get_vertices<T, DIM, PDIM>(V, p1);
+
     if constexpr (DIM == 3) {
         if constexpr (PDIM == 3) { // 3D triangles
-            Eigen::Vector3<T> v0[3], v1[3];
-            get_vertex(p0[0], V, v0[0]);
-            get_vertex(p0[1], V, v0[1]);
-            get_vertex(p0[2], V, v0[2]);
-            get_vertex(p1[0], V, v1[0]);
-            get_vertex(p1[1], V, v1[1]);
-            get_vertex(p1[2], V, v1[2]);
-            return NarrowPhase<T, 3>::discrete_tri_tri(v0, v1);
+            return NarrowPhase<T>::discrete_tri_tri(p[0], p[1], p[2], q[0], q[1], q[2]);
         }
         if constexpr (PDIM == 3) { // 3D tets
-            Eigen::Vector3<T> v0[4], v1[4];
-            get_vertex(p0[0], V, v0[0]);
-            get_vertex(p0[1], V, v0[1]);
-            get_vertex(p0[2], V, v0[2]);
-            get_vertex(p0[3], V, v0[3]);
-            get_vertex(p1[0], V, v1[0]);
-            get_vertex(p1[1], V, v1[1]);
-            get_vertex(p1[2], V, v1[2]);
-            get_vertex(p1[3], V, v1[3]);
-
             // NOTE: Point-in-tet is not a full tet-tet intersection test.
             // But, point-in-tet is usually what I want if doing tet collisions :)
-            for (int i=0;i<4;i++) {
-                if (NarrowPhase<T, 3>::point_in_tet(v0[i], v1[0], v1[1], v1[2], v1[3])) {
+            for (int i = 0; i < 4; i++) {
+                if (NarrowPhase<T>::point_in_tet(p[i], q[0], q[1], q[2], q[3])) {
                     return true;
                 }
-                if (NarrowPhase<T, 3>::point_in_tet(v1[i], v0[0], v0[1], v0[2], v0[3])) {
+                if (NarrowPhase<T>::point_in_tet(q[i], p[0], p[1], p[2], p[3])) {
                     return true;
                 }
             }
         }
-    }
-    else if constexpr (DIM == 2) {
+    } else if constexpr (DIM == 2) {
         if constexpr (PDIM == 2) { // 2D edges
-            Eigen::Vector2<T> v0[2], v1[2];
-            get_vertex(p0[0], V, v0[0]);
-            get_vertex(p0[1], V, v0[1]);
-            get_vertex(p1[0], V, v1[0]);
-            get_vertex(p1[1], V, v1[1]);
-            return NarrowPhase<T, 2>::discrete_edge_edge(v0, v1);
-        }
-        else if constexpr (PDIM == 3) { // 2D triangles
+            return NarrowPhase<T>::discrete_edge_edge(p[0], p[1], q[0], q[1]);
+        } else if constexpr (PDIM == 3) { // 2D triangles
             Eigen::Vector2<T> v0[2];
             Eigen::Vector2<T> v1[2];
             for (int i = 0; i < 3; ++i) {
@@ -652,7 +653,7 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
                 for (int j = 0; j < 3; ++j) {
                     get_vertex(p1[j], V, v1[0]);
                     get_vertex(p1[(j + 1) % 3], V, v1[1]);
-                    if (NarrowPhase<T, 2>::discrete_edge_edge(v0, v1)) {
+                    if (NarrowPhase<T>::discrete_edge_edge(v0[0], v0[1], v1[0], v1[1])) {
                         return true;
                     }
                 }
