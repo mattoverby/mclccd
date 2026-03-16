@@ -181,7 +181,6 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
             BVHLeaf<T, DIM>& leaf = leaves[i];
             leaf.v.setZero();
             leaf.e.setZero();
-
             int prim[PDIM];
             get_primitive<PDIM>(i, P, prim);
             int maxInd = *std::max_element(prim, prim + PDIM);
@@ -632,7 +631,7 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
         if constexpr (PDIM == 4) { // 3D tets
             // NOTE: Point-in-tet is not a full tet-tet intersection test.
             // But, point-in-tet is usually what I want if doing tet collisions :)
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; ++i) {
                 if (NarrowPhase<T>::point_in_tet(p[i], q[0], q[1], q[2], q[3])) {
                     return true;
                 }

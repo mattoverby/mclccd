@@ -206,17 +206,15 @@ template<typename T>
 bool
 NarrowPhase<T>::point_in_tet(const Vec3& p, const Vec3& v0, const Vec3& v1, const Vec3& v2, const Vec3& v3)
 {
-    auto scalar_triple_product = [](const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
-        return (b - a).cross(c - a).dot(d - a);
+    // Point should be on the opposite side of every face normal (or directly on a face)
+    auto check_normal = [](const Vec3& point, const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& p3) {
+        const Vec3 n = (p1 - p0).cross(p2 - p0);
+        const T dp3 = n.dot(p3 - p0);
+        const T dp = n.dot(point - p0);
+        return (dp3 * dp >= 0);
     };
-
-    T s0 = scalar_triple_product(v0, v1, v2, p);
-    T s1 = scalar_triple_product(v0, v1, v3, p);
-    T s2 = scalar_triple_product(v0, v2, v3, p);
-    T s3 = scalar_triple_product(v1, v2, v3, p);
-    bool pos = (s0 >= 0 && s1 >= 0 && s2 >= 0 && s3 >= 0);
-    bool neg = (s0 <= 0 && s1 <= 0 && s2 <= 0 && s3 <= 0);
-    return pos || neg;
+    return check_normal(p, v0, v1, v2, v3) && check_normal(p, v1, v2, v3, v0) && check_normal(p, v2, v3, v0, v1) &&
+           check_normal(p, v3, v0, v1, v2);
 }
 
 // ---------------------------------------------------------
