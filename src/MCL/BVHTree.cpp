@@ -629,7 +629,7 @@ BVHTree<T, DIM, PDIM>::default_discrete_test(const T* V, const int* p0, const in
         if constexpr (PDIM == 3) { // 3D triangles
             return NarrowPhase<T>::discrete_tri_tri(p[0], p[1], p[2], q[0], q[1], q[2]);
         }
-        if constexpr (PDIM == 3) { // 3D tets
+        if constexpr (PDIM == 4) { // 3D tets
             // NOTE: Point-in-tet is not a full tet-tet intersection test.
             // But, point-in-tet is usually what I want if doing tet collisions :)
             for (int i = 0; i < 4; i++) {
