@@ -190,7 +190,8 @@ BVHTree<T, DIM, PDIM>::update(const T* V0, const T* V1, const int* P, int np, co
                 seen_edges.resize(n_verts_guess);
             }
 
-            for (int j = 0; j < PDIM; ++j) {
+            // TODO: Update for PDIM != 3
+            for (int j = 0; j < 3; ++j) {
                 int vi = prim[j];
                 if (seen_verts[vi] == 0) {
                     seen_verts[vi] = 1;
@@ -454,6 +455,12 @@ template<typename T, int DIM, int PDIM>
 void
 BVHTree<T, DIM, PDIM>::get_candidates(int p0, int p1, const int* P, std::array<PairType, NumCandidates>& pairs) const
 {
+    if constexpr (PDIM != 3)
+    {
+        printf("TODO: continuous collision for PDIM != 3 (rep tris)");
+        return;
+    }
+
     const LeafType& l0 = leaves[p0];
     const LeafType& l1 = leaves[p1];
 
