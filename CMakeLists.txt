@@ -34,14 +34,17 @@ set(MCLBVH_INCLUDE
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/KdBVH.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/NarrowPhase.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/Projection.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/SDF.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/CTCD.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/Distance.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/rpoly.h
+	${CMAKE_CURRENT_SOURCE_DIR}/third-party/TriangleMeshDistance.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/tt_isect.hpp)
 set(MCLBVH_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHLeaf.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/BVHTree.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/NarrowPhase.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/MCL/SDF.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/third-party/CTCD.cpp)
 add_library(${PROJECT_NAME} ${MCLBVH_INCLUDE} ${MCLBVH_SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen TBB::tbb)

@@ -20,7 +20,7 @@ class KdBVH;
 namespace mcl {
 namespace ccd {
 
-// Traversal struct for things like point-in-elem queries
+/// @brief Traversal struct for things like point-in-element queries
 template<typename T, int DIM, int PDIM = 3>
 class BVHTraverse
 {
@@ -32,27 +32,25 @@ class BVHTraverse
     virtual bool intersectObject(const ObjectType&) = 0; // true if stop traversing
 };
 
-// Wraps Eigen BVH and provides functions for CCD traversal
+/// @brief Wraps Eigen BVH and provides functions for CCD traversal
 template<typename T, int DIM, int PDIM = 3>
 class BVHTree
 {
   public:
     typedef BVHLeaf<T, DIM> LeafType;
-    typedef Eigen::Matrix<T, DIM, 1> VecType;
     typedef std::pair<Eigen::Vector4i, int> PairType;      // [sten, -1=invalid, 0=ee, 1=vf]
     typedef std::pair<int, bool> NodeIndex;                // [index, isleaf]
     static const size_t NumCandidates = DIM == 2 ? 6 : 15; // narrowphase candidates
-
     std::vector<LeafType> leaves;
     std::unique_ptr<Eigen::KdBVH<T, DIM, LeafType>> tree;
 
     struct Options
     {
-        T vf_ccd_eta;    // gap for vf narrowphase
-        T ee_ccd_eta;    // gap for ee narrowphase
-        bool parallel;   // cpu-threaded traverse(...)
-        bool discrete;   // discrete check ff/ee at V1
-        bool continuous; // ccd check from V0 to V1 (3D triangles only)
+        T vf_ccd_eta;    ///< gap for vf narrowphase
+        T ee_ccd_eta;    ///< gap for ee narrowphase
+        bool parallel;   ///< cpu-threaded traverse(...)
+        bool discrete;   ///< discrete check at V1
+        bool continuous; ///< ccd check from V0 to V1 (3D triangles only)
         Options()
             : vf_ccd_eta(1e-6)
             , ee_ccd_eta(1e-6)
@@ -63,67 +61,76 @@ class BVHTree
         }
     } options;
 
+    /// @brief Constructor
     BVHTree();
+
+    /// @brief Destructor
     virtual ~BVHTree();
 
-    // V is n x dim with V0 at t=0 and V1 at t=1.
-    // P can be m x 3 or 4, depending on the prim (tri or tet)
-    // Active is a per-vertex boolean if the vertex should be checked.
-    // if active buffer empty, all vertices considered active.
+    /// @brief Updates the BVH.
+    /// @param V0 nv x dim vertices at t=0
+    /// @param V1 nv x dim vertices at t=1
+    /// @param P np x pdim primitives (pdim: 3=triangles, 4=tets)
+    /// @param active per-vertex boolean if the vertex should be checked, ignored if empty.
     template<typename DerivedV, typename DerivedP>
     inline void update(const Eigen::MatrixBase<DerivedV>& V0,
                        const Eigen::MatrixBase<DerivedV>& V1,
                        const Eigen::MatrixBase<DerivedP>& P,
                        const Eigen::VectorXi& active = Eigen::VectorXi());
 
-    // Update BVH using raw data.
+    /// @brief Update BVH as above
     void update(const T* V0, const T* V1, const int* P, int np, const int* active = nullptr);
 
-    // Traverses tree and checks from V0 to V1 with P = edges (DIM=2) or faces (DIM==3).
-    // Calls narrow_phase, append_pair, and append_discrete.
+    /// @brief Traverses tree and checks from V0 to V1 with P = edges (DIM=2) or faces (DIM==3).
+    /// Calls narrow_phase, append_pair, and append_discrete.
     void traverse(const T* V0, const T* V1, const int* P) const;
 
-    // Traverse but with Eigen vectors (makes RowMajor copies)
+    /// @brief Traverse but with Eigen vectors (makes RowMajor copies)
     template<typename DerivedV, typename DerivedP>
     inline void traverse(const Eigen::MatrixBase<DerivedV>& V0,
                          const Eigen::MatrixBase<DerivedV>& V1,
                          const Eigen::MatrixBase<DerivedP>& P);
 
-    // Traverse with iterator
-    void traverse(BVHTraverse<T, DIM>* traverser) const;
+    /// @brief Traverse with iterator
+    void traverse(BVHTraverse<T, DIM, PDIM>* traverser) const;
 
-    // This function is called from a thread during CCD if two primitives collide
-    // (and options.continuous==true). It's how you retrieve continuous collisions.
-    // It is called from parallel threads (if options.threaded==true).
-    // If is_vf==false, it is an edge-edge collision.
+    /// @brief This function is called from a thread during CCD if two primitives collide
+    /// (and options.continuous==true). It's how you retrieve continuous collisions.
+    /// It is called from parallel threads (if options.parallel==true).
+    /// If is_vf==false, it is an edge-edge collision.
     std::function<void(const Eigen::Vector4i& sten, bool is_vf, const T& toi)> append_pair;
 
-    // This function is called from a thread if there is a discrete isect
-    // (and options.discrete==true). It's how you retrieve discrete collisions.
-    // It is called from parallel threads (if options.threaded==true).
-    // Return true to exit traversal immediately.
+    /// @brief This function is called from a thread if there is a discrete isect
+    /// (and options.discrete==true). It's how you retrieve discrete collisions.
+    /// It is called from parallel threads (if options.parallel==true).
+    /// Return true to exit traversal immediately.
     std::function<bool(int p0, int p1)> append_discrete;
 
-    // Optional:
-    // Return true if the candidate pair should be skipped before narrow phase.
-    // If is_vf==false, it is an edge-edge query.
+    /// @brief Optional: return true if the candidate pair should be skipped
+    /// before narrow phase. If is_vf==false, it is an edge-edge query.
     std::function<bool(const Eigen::Vector4i& sten, bool is_vf)> filter_pair;
 
-    // Optional:
-    // Performs narrowphase to return time of impact (negative if no hit).
-    // If not set, defaults to ACCD kernels.
-    // If is_vf==false, it is an edge-edge query.
+    /// @brief Optional: performs narrowphase to return time of impact
+    /// (negative if no hit). If not set, defaults to ACCD kernels.
+    /// If is_vf==false, it is an edge-edge query.
     std::function<T(const Eigen::Vector4i& sten, bool is_vf)> narrow_phase;
 
+    /// @brief Optional: performs primitive-to-primitive collision. If not
+    /// defined, uses default edge-edge, tri-tri, or point-in-tet (not tet-tet),
+    /// based on PDIM. Returns true if primitives are intersecting.
+    std::function<bool(int p0, int p1)> discrete_test;
+
   protected:
+    /// @brief Helper function to get the children of the idx'th node.
     void get_children(const NodeIndex& idx, NodeIndex& l, NodeIndex& r) const;
 
+    /// @brief Helper function to get the box of the idx'th node
     const typename LeafType::BoxType& get_box(const NodeIndex& idx) const;
 
-    // Creates list of staring node pairs for traversal
+    /// @brief Creates list of staring node pairs for traversal
     void make_frontlist(const NodeIndex& idx, std::vector<std::pair<NodeIndex, NodeIndex>>& queue) const;
 
-    // Recursive traversal
+    /// @brief Recursive traversal
     void collide(const T* V0,
                  const T* V1,
                  const int* P,
@@ -131,14 +138,16 @@ class BVHTree
                  const NodeIndex& right,
                  std::atomic<int>& stop) const;
 
-    // Creates list of broadphase pairs from rep-tris and no shared vertex
-    // pairs = stencil, type
+    /// @brief Creates list of broadphase pairs from rep-tris and no shared vertex. pairs = stencil, type
     void get_candidates(int p0, int p1, const int* P, std::array<PairType, NumCandidates>& pairs) const;
 
+    /// @brief Returns true if boxes intersect
     bool boxes_intersect(const NodeIndex& left, const NodeIndex& right) const;
 
+    /// @brief If narrow_phase function pointer is not defined, this function is used (ACCD)
     T default_narrow_phase(const T* V0, const T* V1, const Eigen::Vector4i& sten, bool is_vf) const;
 
+    /// @brief If discrete_test function pointer is not defined, this function is used.
     bool default_discrete_test(const T* V, const int* p0, const int* p1) const;
 
 }; // class BVHTree
@@ -152,7 +161,7 @@ BVHTree<T, DIM, PDIM>::update(const Eigen::MatrixBase<DerivedV>& V0,
                               const Eigen::MatrixBase<DerivedP>& P,
                               const Eigen::VectorXi& active)
 {
-    // TODO avoid copy
+    // TODO update this to avoid copy when Derived is row major.
     if (V0.rows() != V1.rows()) {
         return;
     }
@@ -179,7 +188,7 @@ BVHTree<T, DIM, PDIM>::traverse(const Eigen::MatrixBase<DerivedV>& V0,
                                 const Eigen::MatrixBase<DerivedV>& V1,
                                 const Eigen::MatrixBase<DerivedP>& P)
 {
-    // TODO avoid copy.
+    // TODO update this to avoid copy when Derived is row major.
     if (V0.rows() != V1.rows()) {
         return;
     }
