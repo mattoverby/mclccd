@@ -286,7 +286,7 @@ BVHTree<T, DIM, PDIM>::traverse(const T* V0, const T* V1, const int* P) const
 
 template<typename T, int DIM, int PDIM>
 void
-BVHTree<T, DIM, PDIM>::traverse(BVHTraverse<T, DIM>* traverser) const
+BVHTree<T, DIM, PDIM>::traverse(BVHTraverse<T, DIM, PDIM>* traverser) const
 {
     const Eigen::KdBVH<T, DIM, LeafType>& tree_ref = *tree.get();
     Eigen::BVIntersect(tree_ref, *traverser);

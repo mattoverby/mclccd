@@ -92,7 +92,7 @@ class BVHTree
                          const Eigen::MatrixBase<DerivedP>& P);
 
     /// @brief Traverse with iterator
-    void traverse(BVHTraverse<T, DIM>* traverser) const;
+    void traverse(BVHTraverse<T, DIM, PDIM>* traverser) const;
 
     /// @brief This function is called from a thread during CCD if two primitives collide
     /// (and options.continuous==true). It's how you retrieve continuous collisions.
@@ -161,7 +161,7 @@ BVHTree<T, DIM, PDIM>::update(const Eigen::MatrixBase<DerivedV>& V0,
                               const Eigen::MatrixBase<DerivedP>& P,
                               const Eigen::VectorXi& active)
 {
-    // TODO avoid copy
+    // TODO update this to avoid copy when Derived is row major.
     if (V0.rows() != V1.rows()) {
         return;
     }
@@ -188,7 +188,7 @@ BVHTree<T, DIM, PDIM>::traverse(const Eigen::MatrixBase<DerivedV>& V0,
                                 const Eigen::MatrixBase<DerivedV>& V1,
                                 const Eigen::MatrixBase<DerivedP>& P)
 {
-    // TODO avoid copy.
+    // TODO update this to avoid copy when Derived is row major.
     if (V0.rows() != V1.rows()) {
         return;
     }
