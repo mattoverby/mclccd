@@ -15,36 +15,25 @@ namespace ccd {
 template<typename T>
 class SDF
 {
-public:
+  public:
     struct SDFData; // forward declare
     std::unique_ptr<SDFData> data;
 
-    /// @brief Creates an empty signed distance field.
-    SDF();
+    SDF();                                  ///< default constructor
+    ~SDF();                                 ///< default destructor
+    SDF<T>& operator=(SDF<T> const& other); ///< recalculates SDF
+    SDF(const SDF<T>& other);               ///< recalculates SDF
 
     /// @brief Creates the signed distance field.
-    /// @param vertices nv x dim vertices
-    /// @param triangles nt x 3 triangles
-    template<typename DerivedV, typename DerivedP>
-    SDF(const Eigen::MatrixBase<DerivedV>& vertices, const Eigen::MatrixBase<DerivedP>& triangles)
-    {
-        Eigen::Matrix<T,Eigen::Dynamic,3,Eigen::RowMajor> V(vertices.template cast<T>());
-        Eigen::Matrix<int,Eigen::Dynamic,3,Eigen::RowMajor> P(triangles.template cast<int>());
-        create(V.data(), V.rows(), P.data(), P.rows());
-    }
+    /// @param vertices nv x 3 vertices
+    /// @param triangles nf x 3 triangles
+    void create(const Eigen::Matrix<T, Eigen::Dynamic, 3, Eigen::RowMajor>& vertices,
+                const Eigen::Matrix<int, Eigen::Dynamic, 3, Eigen::RowMajor>& triangles);
 
-    /// @brief Creates the signed distance field.
-    /// @param vertex_data nv x 3 vertex data
-    /// @param num_vertices nv
-    /// @param triangle_data nt x 3 triangle index data
-    /// @param num_triangles nt
-    void create(const T* vertex_data, int num_vertices, const int* triangle_data, int num_triangles);
-
-    /// @brief Project to (rest) face: returns {nearest_face, barycoords, distance}
+    /// @brief Project to triangle surface: returns {nearest_face, barycoords, distance}
     /// nearest_face = -1 if there was an error.
     /// @param x vertex to project
-    std::tuple<int, Eigen::Vector3<T>, T> project_to_surface(const Eigen::Vector3<T> &x);
-
+    std::tuple<int, Eigen::Vector3<T>, T> project_to_surface(const Eigen::Vector3<T>& x);
 };
 
 } // end namespace ccd

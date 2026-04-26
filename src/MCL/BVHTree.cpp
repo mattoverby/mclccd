@@ -455,8 +455,7 @@ template<typename T, int DIM, int PDIM>
 void
 BVHTree<T, DIM, PDIM>::get_candidates(int p0, int p1, const int* P, std::array<PairType, NumCandidates>& pairs) const
 {
-    if constexpr (PDIM != 3)
-    {
+    if constexpr (PDIM != 3) {
         printf("TODO: continuous collision for PDIM != 3 (rep tris)");
         return;
     }
